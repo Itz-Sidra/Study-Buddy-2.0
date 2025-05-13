@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Buddy - Features</title>
+    <link href="styles.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #8C52FF;
+            --secondary: #FF6B6B;
+            --accent1: #5CE1E6;
+            --accent2: #FFDE59;
+            --accent3: #72EFB1;
+            --dark: #212529;
+            --light: #F8F9FA;
+            --mid: #6C757D;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            font-family: 'Poppins', sans-serif;
+            padding-top: 70px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .feature {
+            background-color: var(--accent1);
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .feature:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+        .feature h2 {
+            color: var(--secondary);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .feature p {
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>Study Buddy</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Features</h1>
+        <div class="feature">
+            <h2>To-Do List</h2>
+            <p>Keep track of your tasks and deadlines. Organize your study schedule and stay on top of your work.</p>
+        </div>
+        <div class="feature">
+            <h2>Grade Calculator</h2>
+            <p>Calculate your grades and monitor your academic progress in real-time.</p>
+        </div>
+        <div class="feature">
+            <h2>SGPA Calculator</h2>
+            <p>Track your academic performance and calculate your SGPA to understand where you stand.</p>
+        </div>
+        <div class="feature">
+            <h2>Physics Solver</h2>
+            <p>A collection of physics formulas to solve problems in an instant. Just choose your formula from a dropdown, and get the results!</p>
+        </div>
+        <div class="feature">
+            <h2>Unit Converter</h2>
+            <p>Easily convert between different units. Whether it's distance, mass, or time, this tool helps you get the right conversions.</p>
+        </div>
+        <div class="feature">
+            <h2>Flashcards</h2>
+            <p>Memorize your answers with flashcards! Perfect for preparing for exams, quizzes, and homework.</p>
+        </div>
+    </div>
+</body>
+</html>
