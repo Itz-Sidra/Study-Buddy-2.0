@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Buddy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #8C52FF;
+            --secondary: #FF6B6B;
+            --accent1: #5CE1E6;
+            --accent2: #FFDE59;
+            --accent3: #72EFB1;
+            --dark: #212529;
+            --light: #F8F9FA;
+            --mid: #6C757D;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: var(--primary);
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        nav {
+            display: none;
+        }
+        
+        .mobile-nav-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .mobile-nav {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background-color: var(--primary);
+            transition: right 0.3s ease;
+            z-index: 1001;
+            padding: 2rem 1rem;
+        }
+        
+        .mobile-nav.active {
+            right: 0;
+        }
+        
+        .close-nav {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .mobile-nav-links {
+            margin-top: 3rem;
+            list-style-type: none;
+        }
+        
+        .mobile-nav-links li {
+            margin-bottom: 1rem;
+        }
+        
+        .mobile-nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            transition: transform 0.2s ease;
+        }
+        
+        .mobile-nav-links a:hover {
+            transform: translateX(5px);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        main {
+            margin-top: 5rem;
+            padding: 1rem;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, var(--primary), #b68aff);
+            border-radius: 1rem;
+            padding: 2rem;
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(140, 82, 255, 0.3);
+        }
+        
+        .hero h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .emoji {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-card.active {
+            border: 2px solid var(--primary);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            color: var(--primary);
+        }
+        
+        .feature-card:nth-child(2) .feature-icon {
+            color: var(--secondary);
+        }
+        
+        .feature-card:nth-child(3) .feature-icon {
+            color: var(--accent1);
+        }
+        
+        .feature-card:nth-child(4) .feature-icon {
+            color: var(--accent2);
+        }
+        
+        .feature-card:nth-child(5) .feature-icon {
+            color: var(--accent3);
+        }
+        
+        .feature-card:nth-child(6) .feature-icon {
+            color: var(--mid);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-card p {
+            color: var(--mid);
+            font-size: 0.9rem;
+        }
+        
+        .content-area {
+            background-color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            min-height: 400px;
+        }
+        
+        .module {
+            display: none;
+        }
+        
+        .module.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #7642e0;
+            transform: translateY(-2px);
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(140, 82, 255, 0.2);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .task-list {
+            list-style-type: none;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .task-check {
+            margin-right: 1rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .task-content {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        
+        .task-date {
+            font-size: 0.8rem;
+            color: var(--mid);
+        }
+        
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            color: var(--mid);
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .task-actions button {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            padding: 0.3rem;
+            cursor: pointer;
+            color: var(--mid);
+        }
+        
+        .task-actions .delete-btn:hover {
+            color: var(--secondary);
+        }
+        
+        .task-actions .edit-btn:hover {
+            color: var(--primary);
+        }
+        
+        .adding-form {
+            background-color: #f9f9f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .grade-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .grade-item input {
+            flex: 1;
+        }
+        
+        .physics-formula-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .formula-inputs {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .converter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .unit-selectors {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .unit-selectors select {
+            flex: 1;
+        }
+        
+        .flashcard {
+            width: 100%;
+            height: 200px;
+            perspective: 1000px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .flashcard-front {
+            background-color: var(--accent2);
+            color: var(--dark);
+        }
+        
+        .flashcard-back {
+            background-color: var(--accent1);
+            color: var(--dark);
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-content {
+            font-size: 1.3rem;
+            font-weight: 500;
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+        
+        .flashcards-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .result-display {
+            background-color: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+        
+        .result-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0.5rem 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            background-color: var(--dark);
+            color: var(--light);
+            margin-top: 2rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .footer-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .copyright {
+            font-size: 0.8rem;
+            color: var(--mid);
+        }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            top: -10px;
+            z-index: 9999;
+            animation: confetti 3s ease-in-out;
+        }
+        
+        @keyframes confetti {
+            0% { transform: translateY(0) rotateZ(0); opacity: 1; }
+            100% { transform: translateY(100vh) rotateZ(720deg); opacity: 0; }
+        }
+        
+        .module-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .module-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 5px;
+        }
+        
+        .module-title .feature-icon {
+            margin-bottom: 0;
+        }
+        
+        .credit-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .credit-item input {
+            flex: 1;
+        }
+        
+        @media screen and (min-width: 768px) {
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+            
+            .hero h2 {
+                font-size: 2.5rem;
+            }
+            
+            .features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .formula-inputs {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .grade-item {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+            }
+            
+            main {
+                max-width: 1200px;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 2rem;
+            }
+        }
+        
+        @media screen and (min-width: 1024px) {
+            header {
+                padding: 1rem 2rem;
+            }
+            
+            .mobile-nav-toggle {
+                display: none;
+            }
+            
+            nav {
+                display: flex;
+                gap: 2rem;
+            }
+            
+            nav a {
+                color: white;
+                text-decoration: none;
+                font-weight: 500;
+                position: relative;
+            }
+            
+            nav a::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: -5px;
+                width: 0;
+                height: 2px;
+                background-color: white;
+                transition: width 0.3s ease;
+            }
+            
+            nav a:hover::after {
+                width: 100%;
+            }
+            
+            .features {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-book-reader"></i>
+            <h1>Study Buddy</h1>
+        </div>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Features</a>
+            <a href="#">About</a>
+            <a href="#">Contact</a>
+        </nav>
+        <button class="mobile-nav-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+    
+    <div class="mobile-nav">
+        <button class="close-nav">
+            <i class="fas fa-times"></i>
+        </button>
+        <ul class="mobile-nav-links">
+            <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="#"><i class="fas fa-list"></i> Features</a></li>
+            <li><a href="#"><i class="fas fa-info-circle"></i> About</a></li>
+            <li><a href="#"><i class="fas fa-envelope"></i> Contact</a></li>
+        </ul>
+    </div>
+    
+    <div class="overlay"></div>
+    
+    <main>
+        <section class="hero">
+            <div class="emoji">📚</div>
+            <h2>Your All-In-One Study Companion</h2>
+            <p>Manage tasks, calculate grades, solve physics problems, convert units, and create flashcards—all in one place!</p>
+            <button id="get-started-btn">Get Started</button>
+        </section>
+        
+        <section class="features">
+            <div class="feature-card" data-module="todo">
+                <div class="feature-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3>To-Do List</h3>
+                <p>Organize your tasks and stay on top of your assignments.</p>
+            </div>
+            
+            <div class="feature-card" data-module="grade-calculator">
+                <div class="feature-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <h3>Grade Calculator</h3>
+                <p>Calculate your grades and monitor your academic progress.</p>
+            </div>
+            
+            <div class="feature-card" data-module="sgpa-calculator">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>SGPA Calculator</h3>
+                <p>Track your SGPA and understand where you stand.</p>
+            </div>
+            
+            <div class="feature-card" data-module="physics-solver">
+                <div class="feature-icon">
+                    <i class="fas fa-atom"></i>
+                </div>
+                <h3>Physics Solver</h3>
+                <p>Solve physics problems in an instant with formula selection.</p>
+            </div>
+            
+            <div class="feature-card" data-module="unit-converter">
+                <div class="feature-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <h3>Unit Converter</h3>
+                <p>Convert between different units of measurement easily.</p>
+            </div>
+            
+            <div class="feature-card" data-module="flashcards">
+                <div class="feature-icon">
+                    <i class="fas fa-clone"></i>
+                </div>
+                <h3>Flashcards</h3>
+                <p>Create and review flashcards for better memorization.</p>
+            </div>
+        </section>
+        
+        <section class="content-area">
+            <!-- To Do List Module -->
+            <div class="module" id="todo">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h2>To-Do List</h2>
+                </div>
+                
+                <div class="adding-form">
+                    <div class="form-group">
+                        <label for="task-title">Task Title</label>
+                        <input type="text" id="task-title" placeholder="Enter task title...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="task-date">Due Date</label>
+                        <input type="date" id="task-date">
+                    </div>
+                    
+                    <button id="add-task-btn">Add Task</button>
+                </div>
+                
+                <ul class="task-list" id="task-list"></ul>
+            </div>
+            
+            <!-- Grade Calculator Module -->
+            <div class="module" id="grade-calculator">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h2>Grade Calculator</h2>
+                </div>
+                
+                <div id="grade-items">
+                    <div class="grade-item">
+                        <input type="text" class="subject-name" placeholder="Subject Name">
+                        <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100">
+                    </div>
+                </div>
+                
+                <button id="add-subject-btn">Add Subject</button>
+                <button id="calculate-grade-btn">Calculate Average</button>
+                
+                <div class="result-display" id="grade-result" style="display: none;">
+                    <h3>Your Average Grade</h3>
+                    <div class="result-value" id="average-grade">0</div>
+                    <div id="grade-letter">Grade: -</div>
+                </div>
+            </div>
+            
+            <!-- SGPA Calculator Module -->
+            <div class="module" id="sgpa-calculator">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h2>SGPA Calculator</h2>
+                </div>
+                
+                <div id="credit-items">
+                    <div class="credit-item">
+                        <input type="text" class="course-name" placeholder="Course Name">
+                        <input type="number" class="course-credits" placeholder="Credits" min="1" max="10">
+                        <select class="course-grade">
+                            <option value="">Select Grade</option>
+                            <option value="10">O (10)</option>
+                            <option value="9">A+ (9)</option>
+                            <option value="8">A (8)</option>
+                            <option value="7">B+ (7)</option>
+                            <option value="6">B (6)</option>
+                            <option value="5">C (5)</option>
+                            <option value="4">P (4)</option>
+                            <option value="0">F (0)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="add-course-btn">Add Course</button>
+                <button id="calculate-sgpa-btn">Calculate SGPA</button>
+                
+                <div class="result-display" id="sgpa-result" style="display: none;">
+                    <h3>Your SGPA</h3>
+                    <div class="result-value" id="sgpa-value">0.00</div>
+                </div>
+            </div>
+            
+            <!-- Physics Solver Module -->
+            <div class="module" id="physics-solver">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-atom"></i>
+                    </div>
+                    <h2>Physics Solver</h2>
+                </div>
+                
+                <div class="physics-formula-container">
+                    <div class="form-group">
+                        <label for="formula-select">Select Formula</label>
+                        <select id="formula-select">
+                            <option value="">Choose a formula</option>
+                            <option value="velocity">v = u + at</option>
+                            <option value="distance">s = ut + (1/2)at²</option>
+                            <option value="velocity-squared">v² = u² + 2as</option>
+                            <option value="force">F = ma</option>
+                            <option value="kinetic-energy">KE = (1/2)mv²</option>
+                            <option value="potential-energy">PE = mgh</option>
+                            <option value="ohms-law">V = IR</option>
+                            <option value="power">P = VI</option>
+                        </select>
+                    </div>
+                    
+                    <div id="formula-inputs" class="formula-inputs"></div>
+                    
+                    <button id="solve-physics-btn" style="display: none;">Solve</button>
+                    
+                    <div class="result-display" id="physics-result" style="display: none;">
+                        <h3>Result</h3>
+                        <div class="result-value" id="physics-answer">0</div>
+                        <div id="physics-unit"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Unit Converter Module -->
+            <div class="module" id="unit-converter">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h2>Unit Converter</h2>
+                </div>
+                
+                <div class="converter-form">
+                    <div class="form-group">
+                        <label for="conversion-type">Conversion Type</label>
+                        <select id="conversion-type">
+                            <option value="">Select type</option>
+                            <option value="length">Length</option>
+                            <option value="mass">Mass</option>
+                            <option value="temperature">Temperature</option>
+                            <option value="time">Time</option>
+                            <option value="volume">Volume</option>
+                        </select>
+                    </div>
+                    
+                    <div class="unit-selectors" style="display: none;">
+                        <select id="from-unit"></select>
+                        <select id="to-unit"></select>
+                    </div>
+                    
+                    <div class="form-group" style="display: none;" id="value-input-group">
+                        <label for="value-to-convert">Value to Convert</label>
+                        <input type="number" id="value-to-convert" placeholder="Enter value...">
+                    </div>
+                    
+                    <button id="convert-btn" style="display: none;">Convert</button>
+                    
+                    <div class="result-display" id="conversion-result" style="display: none;">
+                        <h3>Conversion Result</h3>
+                        <div class="result-value" id="converted-value">0</div>
+                        <div id="conversion-equation"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flashcards Module -->
+            <div class="module" id="flashcards">
+                <div class="module-title">
+                    <div class="feature-icon">
+                        <i class="fas fa-clone"></i>
+                    </div>
+                    <h2>Flashcards</h2>
+                </div>
+                
+                <div id="flashcards-container"></div>
+                
+                <div class="adding-form">
+                    <div class="form-group">
+                        <label for="flashcard-front">Front (Question)</label>
+                        <textarea id="flashcard-front" rows="3" placeholder="Enter question..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="flashcard-back">Back (Answer)</label>
+                        <textarea id="flashcard-back" rows="3" placeholder="Enter answer..."></textarea>
+                    </div>
+                    
+                    <button id="add-flashcard-btn">Create Flashcard</button>
+                </div>
+                
+                <div class="flashcards-controls" style="display: none;">
+                    <button id="prev-flashcard-btn">Previous</button>
+                    <button id="flip-flashcard-btn">Flip</button>
+                    <button id="next-flashcard-btn">Next</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="logo">
+            <i class="fas fa-book-reader"></i>
+            <h3>Study Buddy</h3>
+        </div>
+        <div class="footer-links">
+            <a href="#">Home</a>
+            <a href="#">Features</a>
+            <a href="#">About</a>
+            <a href="#">Contact</a>
+        </div>
+        <p class="copyright">© 2025 Study Buddy. All rights reserved.</p>
+    </footer>
+    
+    <script>
+        // Mobile Navigation Toggle
+        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+        const closeNavBtn = document.querySelector('.close-nav');
+        const mobileNav = document.querySelector('.mobile-nav');
+        const overlay = document.querySelector('.overlay');
+        
+        mobileNavToggle.addEventListener('click', () => {
+            mobileNav.classList.add('active');
+            overlay.classList.add('active');
+        });
+        
+        closeNavBtn.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+        
+        overlay.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+        
+        // Feature Card Selection
+        const featureCards = document.querySelectorAll('.feature-card');
+        const modules = document.querySelectorAll('.module');
+        const getStartedBtn = document.getElementById('get-started-btn');
+        
+        // Show initial module when "Get Started" is clicked
+        getStartedBtn.addEventListener('click', () => {
+            modules[0].classList.add('active');
+            featureCards[0].classList.add('active');
+            document.querySelector('.content-area').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        featureCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const moduleId = card.getAttribute('data-module');
+                
+                // Remove active class from all cards and modules
+                featureCards.forEach(c => c.classList.remove('active'));
+                modules.forEach(m => m.classList.remove('active'));
+                
+                // Add active class to clicked card and corresponding module
+                card.classList.add('active');
+                document.getElementById(moduleId).classList.add('active');
+                
+                // Scroll to content area
+                document.querySelector('.content-area').scrollIntoView({ behavior: 'smooth' });
+                
+                // Create confetti effect
+                createConfetti();
+            });
+        });
+        
+        // Ripple Effect on Buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                const button = e.target;
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                button.appendChild(ripple);
+                
+                const rect = button.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                setTimeout(() => ripple.remove(), 600);
+            }
+        });
+        
+        // Confetti Effect
+        function createConfetti() {
+            const colors = ['#8C52FF', '#FF6B6B', '#5CE1E6', '#FFDE59', '#72EFB1'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = `${Math.random() * 10 + 5}px`;
+                confetti.style.height = `${Math.random() * 10 + 5}px`;
+                confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+        
+        // To-Do List Functionality
+        const taskTitleInput = document.getElementById('task-title');
+        const taskDateInput = document.getElementById('task-date');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const taskList = document.getElementById('task-list');
+        
+        // Initialize tasks from localStorage
+        let tasks = JSON.parse(localStorage.getItem('studyBuddyTasks')) || [];
+        
+        // Display tasks
+        function renderTasks() {
+            taskList.innerHTML = '';
+            
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.classList.add('task-item');
+                if (task.completed) {
+                    li.classList.add('completed');
+                }
+                
+                li.innerHTML = `
+                    <input type="checkbox" class="task-check" ${task.completed ? 'checked' : ''}>
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-date">${task.date ? new Date(task.date).toLocaleDateString() : 'No due date'}</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="edit-btn"><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                
+                // Event listeners for task actions
+                const checkbox = li.querySelector('.task-check');
+                checkbox.addEventListener('change', () => {
+                    tasks[index].completed = checkbox.checked;
+                    if (checkbox.checked) {
+                        li.classList.add('completed');
+                    } else {
+                        li.classList.remove('completed');
+                    }
+                    saveTasks();
+                });
+                
+                const deleteBtn = li.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', () => {
+                    tasks.splice(index, 1);
+                    renderTasks();
+                    saveTasks();
+                });
+                
+                const editBtn = li.querySelector('.edit-btn');
+                editBtn.addEventListener('click', () => {
+                    taskTitleInput.value = task.title;
+                    taskDateInput.value = task.date ? task.date : '';
+                    tasks.splice(index, 1);
+                    renderTasks();
+                    saveTasks();
+                });
+                
+                taskList.appendChild(li);
+            });
+        }
+        
+        // Save tasks to localStorage
+        function saveTasks() {
+            localStorage.setItem('studyBuddyTasks', JSON.stringify(tasks));
+        }
+        
+        // Add task event
+        addTaskBtn.addEventListener('click', () => {
+            const title = taskTitleInput.value.trim();
+            const date = taskDateInput.value;
+            
+            if (title) {
+                tasks.push({
+                    title,
+                    date,
+                    completed: false
+                });
+                
+                taskTitleInput.value = '';
+                taskDateInput.value = '';
+                
+                renderTasks();
+                saveTasks();
+            }
+        });
+        
+        // Initialize task list
+        renderTasks();
+        
+        // Grade Calculator Functionality
+        const addSubjectBtn = document.getElementById('add-subject-btn');
+        const calculateGradeBtn = document.getElementById('calculate-grade-btn');
+        const gradeItems = document.getElementById('grade-items');
+        const gradeResult = document.getElementById('grade-result');
+        const averageGrade = document.getElementById('average-grade');
+        const gradeLetter = document.getElementById('grade-letter');
+        
+        addSubjectBtn.addEventListener('click', () => {
+            const gradeItem = document.createElement('div');
+            gradeItem.classList.add('grade-item');
+            gradeItem.innerHTML = `
+                <input type="text" class="subject-name" placeholder="Subject Name">
+                <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100">
+            `;
+            gradeItems.appendChild(gradeItem);
+        });
+        
+        calculateGradeBtn.addEventListener('click', () => {
+            const grades = document.querySelectorAll('.subject-grade');
+            let totalGrade = 0;
+            let validGrades = 0;
+            
+            grades.forEach(grade => {
+                if (grade.value && !isNaN(parseFloat(grade.value))) {
+                    totalGrade += parseFloat(grade.value);
+                    validGrades++;
+                }
+            });
+            
+            if (validGrades > 0) {
+                const average = totalGrade / validGrades;
+                averageGrade.textContent = average.toFixed(2);
+                
+                let letter = '';
+                if (average >= 90) letter = 'A';
+                else if (average >= 80) letter = 'B';
+                else if (average >= 70) letter = 'C';
+                else if (average >= 60) letter = 'D';
+                else letter = 'F';
+                
+                gradeLetter.textContent = `Grade: ${letter}`;
+                gradeResult.style.display = 'block';
+            }
+        });
+        
+        // SGPA Calculator Functionality
+        const addCourseBtn = document.getElementById('add-course-btn');
+        const calculateSGPABtn = document.getElementById('calculate-sgpa-btn');
+        const creditItems = document.getElementById('credit-items');
+        const sgpaResult = document.getElementById('sgpa-result');
+        const sgpaValue = document.getElementById('sgpa-value');
+        
+        addCourseBtn.addEventListener('click', () => {
+            const creditItem = document.createElement('div');
+            creditItem.classList.add('credit-item');
+            creditItem.innerHTML = `
+                <input type="text" class="course-name" placeholder="Course Name">
+                <input type="number" class="course-credits" placeholder="Credits" min="1" max="10">
+                <select class="course-grade">
+                    <option value="">Select Grade</option>
+                    <option value="10">O (10)</option>
+                    <option value="9">A+ (9)</option>
+                    <option value="8">A (8)</option>
+                    <option value="7">B+ (7)</option>
+                    <option value="6">B (6)</option>
+                    <option value="5">C (5)</option>
+                    <option value="4">P (4)</option>
+                    <option value="0">F (0)</option>
+                </select>
+            `;
+            creditItems.appendChild(creditItem);
+        });
+        
+        calculateSGPABtn.addEventListener('click', () => {
+            const credits = document.querySelectorAll('.course-credits');
+            const grades = document.querySelectorAll('.course-grade');
+            
+            let totalCredits = 0;
+            let totalGradePoints = 0;
+            
+            for (let i = 0; i < credits.length; i++) {
+                if (credits[i].value && grades[i].value) {
+                    const credit = parseFloat(credits[i].value);
+                    const grade = parseFloat(grades[i].value);
+                    
+                    totalCredits += credit;
+                    totalGradePoints += (credit * grade);
+                }
+            }
+            
+            if (totalCredits > 0) {
+                const sgpa = totalGradePoints / totalCredits;
+                sgpaValue.textContent = sgpa.toFixed(2);
+                sgpaResult.style.display = 'block';
+            }
+        });
+        
+        // Physics Solver Functionality
+        const formulaSelect = document.getElementById('formula-select');
+        const formulaInputs = document.getElementById('formula-inputs');
+        const solvePhysicsBtn = document.getElementById('solve-physics-btn');
+        const physicsResult = document.getElementById('physics-result');
+        const physicsAnswer = document.getElementById('physics-answer');
+        const physicsUnit = document.getElementById('physics-unit');
+        
+        // Define formulas and their variables
+        const formulas = {
+            'velocity': {
+                variables: [
+                    { name: 'u', label: 'Initial velocity (u)', unit: 'm/s' },
+                    { name: 'a', label: 'Acceleration (a)', unit: 'm/s²' },
+                    { name: 't', label: 'Time (t)', unit: 's' }
+                ],
+                solve: (values) => {
+                    return values.u + values.a * values.t;
+                },
+                unit: 'm/s',
+                equation: 'v = u + at'
+            },
+            'distance': {
+                variables: [
+                    { name: 'u', label: 'Initial velocity (u)', unit: 'm/s' },
+                    { name: 'a', label: 'Acceleration (a)', unit: 'm/s²' },
+                    { name: 't', label: 'Time (t)', unit: 's' }
+                ],
+                solve: (values) => {
+                    return values.u * values.t + 0.5 * values.a * Math.pow(values.t, 2);
+                },
+                unit: 'm',
+                equation: 's = ut + (1/2)at²'
+            },
+            'velocity-squared': {
+                variables: [
+                    { name: 'u', label: 'Initial velocity (u)', unit: 'm/s' },
+                    { name: 'a', label: 'Acceleration (a)', unit: 'm/s²' },
+                    { name: 's', label: 'Distance (s)', unit: 'm' }
+                ],
+                solve: (values) => {
+                    return Math.sqrt(Math.pow(values.u, 2) + 2 * values.a * values.s);
+                },
+                unit: 'm/s',
+                equation: 'v = √(u² + 2as)'
+            },
+            'force': {
+                variables: [
+                    { name: 'm', label: 'Mass (m)', unit: 'kg' },
+                    { name: 'a', label: 'Acceleration (a)', unit: 'm/s²' }
+                ],
+                solve: (values) => {
+                    return values.m * values.a;
+                },
+                unit: 'N',
+                equation: 'F = ma'
+            },
+            'kinetic-energy': {
+                variables: [
+                    { name: 'm', label: 'Mass (m)', unit: 'kg' },
+                    { name: 'v', label: 'Velocity (v)', unit: 'm/s' }
+                ],
+                solve: (values) => {
+                    return 0.5 * values.m * Math.pow(values.v, 2);
+                },
+                unit: 'J',
+                equation: 'KE = (1/2)mv²'
+            },
+            'potential-energy': {
+                variables: [
+                    { name: 'm', label: 'Mass (m)', unit: 'kg' },
+                    { name: 'g', label: 'Gravity (g)', unit: 'm/s²', default: 9.8 },
+                    { name: 'h', label: 'Height (h)', unit: 'm' }
+                ],
+                solve: (values) => {
+                    return values.m * values.g * values.h;
+                },
+                unit: 'J',
+                equation: 'PE = mgh'
+            },
+            'ohms-law': {
+                variables: [
+                    { name: 'i', label: 'Current (I)', unit: 'A' },
+                    { name: 'r', label: 'Resistance (R)', unit: 'Ω' }
+                ],
+                solve: (values) => {
+                    return values.i * values.r;
+                },
+                unit: 'V',
+                equation: 'V = IR'
+            },
+            'power': {
+                variables: [
+                    { name: 'v', label: 'Voltage (V)', unit: 'V' },
+                    { name: 'i', label: 'Current (I)', unit: 'A' }
+                ],
+                solve: (values) => {
+                    return values.v * values.i;
+                },
+                unit: 'W',
+                equation: 'P = VI'
+            }
+        };
+        
+        formulaSelect.addEventListener('change', () => {
+            const selectedFormula = formulaSelect.value;
+            formulaInputs.innerHTML = '';
+            
+            if (selectedFormula && formulas[selectedFormula]) {
+                const formula = formulas[selectedFormula];
+                
+                formula.variables.forEach(variable => {
+                    const inputGroup = document.createElement('div');
+                    inputGroup.classList.add('form-group');
+                    
+                    inputGroup.innerHTML = `
+                        <label for="${variable.name}">${variable.label}</label>
+                        <input type="number" id="${variable.name}" step="any" placeholder="Enter value..." ${variable.default ? `value="${variable.default}"` : ''}>
+                        <small>${variable.unit}</small>
+                    `;
+                    
+                    formulaInputs.appendChild(inputGroup);
+                });
+                
+                solvePhysicsBtn.style.display = 'block';
+            } else {
+                solvePhysicsBtn.style.display = 'none';
+            }
+            
+            physicsResult.style.display = 'none';
+        });
+        
+        solvePhysicsBtn.addEventListener('click', () => {
+            const selectedFormula = formulaSelect.value;
+            
+            if (selectedFormula && formulas[selectedFormula]) {
+                const formula = formulas[selectedFormula];
+                const values = {};
+                
+                // Get input values
+                let allInputsFilled = true;
+                formula.variables.forEach(variable => {
+                    const input = document.getElementById(variable.name);
+                    if (input.value) {
+                        values[variable.name] = parseFloat(input.value);
+                    } else {
+                        allInputsFilled = false;
+                    }
+                });
+                
+                if (allInputsFilled) {
+                    const result = formula.solve(values);
+                    physicsAnswer.textContent = result.toFixed(2);
+                    physicsUnit.textContent = formula.unit;
+                    physicsResult.style.display = 'block';
+                }
+            }
+        });
+        
+        // Unit Converter Functionality
+        const conversionType = document.getElementById('conversion-type');
+        const fromUnit = document.getElementById('from-unit');
+        const toUnit = document.getElementById('to-unit');
+        const valueInput = document.getElementById('value-to-convert');
+        const valueInputGroup = document.getElementById('value-input-group');
+        const convertBtn = document.getElementById('convert-btn');
+        const conversionResult = document.getElementById('conversion-result');
+        const convertedValue = document.getElementById('converted-value');
+        const conversionEquation = document.getElementById('conversion-equation');
+        const unitSelectors = document.querySelector('.unit-selectors');
+        
+        // Define conversion units
+        const conversions = {
+            'length': {
+                units: ['meter', 'centimeter', 'kilometer', 'inch', 'foot', 'yard', 'mile'],
+                convertTo: (value, from, to) => {
+                    // Convert to meters first
+                    let meters;
+                    switch(from) {
+                        case 'meter': meters = value; break;
+                        case 'centimeter': meters = value / 100; break;
+                        case 'kilometer': meters = value * 1000; break;
+                        case 'inch': meters = value * 0.0254; break;
+                        case 'foot': meters = value * 0.3048; break;
+                        case 'yard': meters = value * 0.9144; break;
+                        case 'mile': meters = value * 1609.34; break;
+                    }
+                    
+                    // Convert from meters to target unit
+                    switch(to) {
+                        case 'meter': return meters;
+                        case 'centimeter': return meters * 100;
+                        case 'kilometer': return meters / 1000;
+                        case 'inch': return meters / 0.0254;
+                        case 'foot': return meters / 0.3048;
+                        case 'yard': return meters / 0.9144;
+                        case 'mile': return meters / 1609.34;
+                    }
+                }
+            },
+            'mass': {
+                units: ['kilogram', 'gram', 'milligram', 'pound', 'ounce', 'ton'],
+                convertTo: (value, from, to) => {
+                    // Convert to grams first
+                    let grams;
+                    switch(from) {
+                        case 'kilogram': grams = value * 1000; break;
+                        case 'gram': grams = value; break;
+                        case 'milligram': grams = value / 1000; break;
+                        case 'pound': grams = value * 453.592; break;
+                        case 'ounce': grams = value * 28.3495; break;
+                        case 'ton': grams = value * 1000000; break;
+                    }
+                    
+                    // Convert from grams to target unit
+                    switch(to) {
+                        case 'kilogram': return grams / 1000;
+                        case 'gram': return grams;
+                        case 'milligram': return grams * 1000;
+                        case 'pound': return grams / 453.592;
+                        case 'ounce': return grams / 28.3495;
+                        case 'ton': return grams / 1000000;
+                    }
+                }
+            },
+            'temperature': {
+                units: ['celsius', 'fahrenheit', 'kelvin'],
+                convertTo: (value, from, to) => {
+                    // Convert to celsius first
+                    let celsius;
+                    switch(from) {
+                        case 'celsius': celsius = value; break;
+                        case 'fahrenheit': celsius = (value - 32) * (5/9); break;
+                        case 'kelvin': celsius = value - 273.15; break;
+                    }
+                    
+                    // Convert from celsius to target unit
+                    switch(to) {
+                        case 'celsius': return celsius;
+                        case 'fahrenheit': return celsius * (9/5) + 32;
+                        case 'kelvin': return celsius + 273.15;
+                    }
+                }
+            },
+            'time': {
+                units: ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'],
+                convertTo: (value, from, to) => {
+                    // Convert to seconds first
+                    let seconds;
+                    switch(from) {
+                        case 'second': seconds = value; break;
+                        case 'minute': seconds = value * 60; break;
+                        case 'hour': seconds = value * 3600; break;
+                        case 'day': seconds = value * 86400; break;
+                        case 'week': seconds = value * 604800; break;
+                        case 'month': seconds = value * 2592000; break;
+                        case 'year': seconds = value * 31536000; break;
+                    }
+                    
+                    // Convert from seconds to target unit
+                    switch(to) {
+                        case 'second': return seconds;
+                        case 'minute': return seconds / 60;
+                        case 'hour': return seconds / 3600;
+                        case 'day': return seconds / 86400;
+                        case 'week': return seconds / 604800;
+                        case 'month': return seconds / 2592000;
+                        case 'year': return seconds / 31536000;
+                    }
+                }
+            },
+            'volume': {
+                units: ['liter', 'milliliter', 'cubic_meter', 'gallon', 'quart', 'pint', 'cup'],
+                convertTo: (value, from, to) => {
+                    // Convert to milliliters first
+                    let ml;
+                    switch(from) {
+                        case 'liter': ml = value * 1000; break;
+                        case 'milliliter': ml = value; break;
+                        case 'cubic_meter': ml = value * 1000000; break;
+                        case 'gallon': ml = value * 3785.41; break;
+                        case 'quart': ml = value * 946.353; break;
+                        case 'pint': ml = value * 473.176; break;
+                        case 'cup': ml = value * 236.588; break;
+                    }
+                    
+                    // Convert from milliliters to target unit
+                    switch(to) {
+                        case 'liter': return ml / 1000;
+                        case 'milliliter': return ml;
+                        case 'cubic_meter': return ml / 1000000;
+                        case 'gallon': return ml / 3785.41;
+                        case 'quart': return ml / 946.353;
+                        case 'pint': return ml / 473.176;
+                        case 'cup': return ml / 236.588;
+                    }
+                }
+            }
+        };
+        
+        conversionType.addEventListener('change', () => {
+            const selectedType = conversionType.value;
+            fromUnit.innerHTML = '';
+            toUnit.innerHTML = '';
+            
+            if (selectedType && conversions[selectedType]) {
+                const units = conversions[selectedType].units;
+                
+                units.forEach(unit => {
+                    fromUnit.innerHTML += `<option value="${unit}">${unit.charAt(0).toUpperCase() + unit.slice(1)}</option>`;
+                    toUnit.innerHTML += `<option value="${unit}">${unit.charAt(0).toUpperCase() + unit.slice(1)}</option>`;
+                });
+                
+                // Set different default values
+                if (units.length > 1) {
+                    toUnit.value = units[1];
+                }
+                
+                unitSelectors.style.display = 'flex';
+                valueInputGroup.style.display = 'block';
+                convertBtn.style.display = 'block';
+            } else {
+                unitSelectors.style.display = 'none';
+                valueInputGroup.style.display = 'none';
+                convertBtn.style.display = 'none';
+            }
+            
+            conversionResult.style.display = 'none';
+        });
+        
+        convertBtn.addEventListener('click', () => {
+            const type = conversionType.value;
+            const from = fromUnit.value;
+            const to = toUnit.value;
+            const value = parseFloat(valueInput.value);
+            
+            if (type && from && to && !isNaN(value)) {
+                const result = conversions[type].convertTo(value, from, to);
+                convertedValue.textContent = result.toFixed(4);
+                conversionEquation.textContent = `${value} ${from} = ${result.toFixed(4)} ${to}`;
+                conversionResult.style.display = 'block';
+            }
+        });
+        
+        // Flashcards Functionality
+        const flashcardsContainer = document.getElementById('flashcards-container');
+        const flashcardFront = document.getElementById('flashcard-front');
+        const flashcardBack = document.getElementById('flashcard-back');
+        const addFlashcardBtn = document.getElementById('add-flashcard-btn');
+        const prevFlashcardBtn = document.getElementById('prev-flashcard-btn');
+        const flipFlashcardBtn = document.getElementById('flip-flashcard-btn');
+        const nextFlashcardBtn = document.getElementById('next-flashcard-btn');
+        const flashcardsControls = document.querySelector('.flashcards-controls');
+        
+        // Initialize flashcards from localStorage
+        let flashcards = JSON.parse(localStorage.getItem('studyBuddyFlashcards')) || [];
+        let currentFlashcardIndex = 0;
+        
+        // Display flashcards
+        function renderFlashcards() {
+            flashcardsContainer.innerHTML = '';
+            
+            if (flashcards.length > 0) {
+                const flashcard = document.createElement('div');
+                flashcard.classList.add('flashcard');
+                flashcard.innerHTML = `
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="flashcard-content">${flashcards[currentFlashcardIndex].front}</div>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="flashcard-content">${flashcards[currentFlashcardIndex].back}</div>
+                        </div>
+                    </div>
+                `;
+                
+                flashcardsContainer.appendChild(flashcard);
+                flashcardsControls.style.display = 'flex';
+                
+                // Add click event to flip the card
+                flashcard.addEventListener('click', () => {
+                    flashcard.classList.toggle('flipped');
+                });
+            } else {
+                flashcardsControls.style.display = 'none';
+            }
+        }
+        
+        // Save flashcards to localStorage
+        function saveFlashcards() {
+            localStorage.setItem('studyBuddyFlashcards', JSON.stringify(flashcards));
+        }
+        
+        // Add flashcard event
+        addFlashcardBtn.addEventListener('click', () => {
+            const front = flashcardFront.value.trim();
+            const back = flashcardBack.value.trim();
+            
+            if (front && back) {
+                flashcards.push({ front, back });
+                
+                flashcardFront.value = '';
+                flashcardBack.value = '';
+                
+                currentFlashcardIndex = flashcards.length - 1;
+                renderFlashcards();
+                saveFlashcards();
+            }
+        });
+        
+        // Navigation and flip controls
+        prevFlashcardBtn.addEventListener('click', () => {
+            if (flashcards.length > 0) {
+                currentFlashcardIndex = (currentFlashcardIndex - 1 + flashcards.length) % flashcards.length;
+                renderFlashcards();
+            }
+        });
+        
+        nextFlashcardBtn.addEventListener('click', () => {
+            if (flashcards.length > 0) {
+                currentFlashcardIndex = (currentFlashcardIndex + 1) % flashcards.length;
+                renderFlashcards();
+            }
+        });
+        
+        flipFlashcardBtn.addEventListener('click', () => {
+            const flashcard = document.querySelector('.flashcard');
+            if (flashcard) {
+                flashcard.classList.toggle('flipped');
+            }
+        });
+        
+        // Initialize flashcards
+        renderFlashcards();
+    </script>
+</body>
+</html>
+
