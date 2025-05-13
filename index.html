@@ -763,7 +763,7 @@
                     
                     <div class="form-group">
                         <label for="task-date">Due Date</label>
-                        <input type="date" id="task-date">
+                        <input type="date" id="task-date" min="">
                     </div>
                     
                     <button id="add-task-btn">Add Task</button>
@@ -784,15 +784,15 @@
                 <div id="grade-items">
                     <div class="grade-item">
                         <input type="text" class="subject-name" placeholder="Subject Name">
-                        <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100">
+                        <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100" oninput="validateGradeInput(this)">
                     </div>
                 </div>
                 
                 <button id="add-subject-btn">Add Subject</button>
-                <button id="calculate-grade-btn">Calculate Average</button>
+                <button id="calculate-grade-btn">Calculate Percentage</button>
                 
                 <div class="result-display" id="grade-result" style="display: none;">
-                    <h3>Your Average Grade</h3>
+                    <h3>Your Percentage</h3>
                     <div class="result-value" id="average-grade">0</div>
                     <div id="grade-letter">Grade: -</div>
                 </div>
@@ -900,7 +900,8 @@
                     
                     <div class="form-group" style="display: none;" id="value-input-group">
                         <label for="value-to-convert">Value to Convert</label>
-                        <input type="number" id="value-to-convert" placeholder="Enter value...">
+                        <input type="number" id="value-to-convert" placeholder="Enter value..." step="any">
+                        <small id="value-error" class="error-message" style="display: none;">Please enter a valid number</small>
                     </div>
                     
                     <button id="convert-btn" style="display: none;">Convert</button>
@@ -1057,6 +1058,22 @@
             }
         }
         
+        // Set minimum date for task date input to today's date
+        function setMinDate() {
+            const today = new Date();
+            let month = today.getMonth() + 1;
+            let day = today.getDate();
+            
+            month = month < 10 ? '0' + month : month;
+            day = day < 10 ? '0' + day : day;
+            
+            const formattedDate = today.getFullYear() + '-' + month + '-' + day;
+            document.getElementById('task-date').min = formattedDate;
+        }
+        
+        // Call this function when page loads
+        setMinDate();
+        
         // To-Do List Functionality
         const taskTitleInput = document.getElementById('task-title');
         const taskDateInput = document.getElementById('task-date');
@@ -1149,6 +1166,21 @@
         // Initialize task list
         renderTasks();
         
+        // Function to validate grade input (0-100)
+        function validateGradeInput(input) {
+            // Remove any non-numeric characters
+            input.value = input.value.replace(/[^0-9]/g, '');
+            
+            const value = parseInt(input.value);
+            
+            // Enforce min and max constraints
+            if (value < 0) {
+                input.value = 0;
+            } else if (value > 100) {
+                input.value = 100;
+            }
+        }
+        
         // Grade Calculator Functionality
         const addSubjectBtn = document.getElementById('add-subject-btn');
         const calculateGradeBtn = document.getElementById('calculate-grade-btn');
@@ -1162,7 +1194,7 @@
             gradeItem.classList.add('grade-item');
             gradeItem.innerHTML = `
                 <input type="text" class="subject-name" placeholder="Subject Name">
-                <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100">
+                <input type="number" class="subject-grade" placeholder="Grade (0-100)" min="0" max="100" oninput="validateGradeInput(this)">
             `;
             gradeItems.appendChild(gradeItem);
         });
@@ -1174,20 +1206,23 @@
             
             grades.forEach(grade => {
                 if (grade.value && !isNaN(parseFloat(grade.value))) {
-                    totalGrade += parseFloat(grade.value);
-                    validGrades++;
+                    const value = parseFloat(grade.value);
+                    if (value >= 0 && value <= 100) {
+                        totalGrade += value;
+                        validGrades++;
+                    }
                 }
             });
             
             if (validGrades > 0) {
-                const average = totalGrade / validGrades;
-                averageGrade.textContent = average.toFixed(2);
+                const percentage = totalGrade / validGrades;
+                averageGrade.textContent = percentage.toFixed(2) + '%';
                 
                 let letter = '';
-                if (average >= 90) letter = 'A';
-                else if (average >= 80) letter = 'B';
-                else if (average >= 70) letter = 'C';
-                else if (average >= 60) letter = 'D';
+                if (percentage >= 90) letter = 'A';
+                else if (percentage >= 80) letter = 'B';
+                else if (percentage >= 70) letter = 'C';
+                else if (percentage >= 60) letter = 'D';
                 else letter = 'F';
                 
                 gradeLetter.textContent = `Grade: ${letter}`;
@@ -1288,7 +1323,8 @@
                     { name: 's', label: 'Distance (s)', unit: 'm' }
                 ],
                 solve: (values) => {
-                    return Math.sqrt(Math.pow(values.u, 2) + 2 * values.a * values.s);
+                    const result = Math.pow(values.u, 2) + 2 * values.a * values.s;
+                    return result >= 0 ? Math.sqrt(result) : "Complex value";
                 },
                 unit: 'm/s',
                 equation: 'v = √(u² + 2as)'
