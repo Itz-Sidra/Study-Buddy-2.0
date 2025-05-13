@@ -1,4 +1,3 @@
-````markdown
 # Study Buddy
 
 Welcome to **Study Buddy**! 🌟 Your all-in-one study companion that makes learning fun! ✨
@@ -129,5 +128,3 @@ Feel free to fork the repository and contribute by submitting issues or pull req
 ---
 
 Thank you for using **Study Buddy**! 🌟 Let's make studying fun and efficient together. ✨
-
-```
