@@ -1471,7 +1471,6 @@
         }
     });
 
-        
         // Unit Converter Functionality
         const conversionType = document.getElementById('conversion-type');
         const fromUnit = document.getElementById('from-unit');
@@ -1483,7 +1482,8 @@
         const convertedValue = document.getElementById('converted-value');
         const conversionEquation = document.getElementById('conversion-equation');
         const unitSelectors = document.querySelector('.unit-selectors');
-        
+        const valueError = document.getElementById('value-error');
+
         // Define conversion units
         const conversions = {
             'length': {
@@ -1612,7 +1612,8 @@
                 }
             }
         };
-        
+
+        // Conversion logic
         conversionType.addEventListener('change', () => {
             const selectedType = conversionType.value;
             fromUnit.innerHTML = '';
@@ -1650,6 +1651,72 @@
             const value = parseFloat(valueInput.value);
             
             if (type && from && to && !isNaN(value)) {
+                const result = conversions[type].convertTo(value, from, to);
+                convertedValue.textContent = result.toFixed(4);
+                conversionEquation.textContent = `${value} ${from} = ${result.toFixed(4)} ${to}`;
+                conversionResult.style.display = 'block';
+            }
+        });
+
+        // Event listener to restrict input to numeric values and prevent negative input
+        valueInput.addEventListener('keydown', (e) => {
+            // Allow only numeric values and control keys (backspace, delete, etc.)
+            if (!/^[0-9\.]$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // Event listener to check for negative values and invalid inputs
+        valueInput.addEventListener('input', () => {
+            const value = parseFloat(valueInput.value);
+            if (value < 0 || isNaN(value)) {
+                valueError.style.display = 'inline';
+                convertBtn.disabled = true;
+            } else {
+                valueError.style.display = 'none';
+                convertBtn.disabled = false;
+            }
+        });
+
+        // Handle unit selection change
+        conversionType.addEventListener('change', () => {
+            const selectedType = conversionType.value;
+            fromUnit.innerHTML = '';
+            toUnit.innerHTML = '';
+            
+            if (selectedType && conversions[selectedType]) {
+                const units = conversions[selectedType].units;
+                
+                units.forEach(unit => {
+                    fromUnit.innerHTML += `<option value="${unit}">${unit.charAt(0).toUpperCase() + unit.slice(1)}</option>`;
+                    toUnit.innerHTML += `<option value="${unit}">${unit.charAt(0).toUpperCase() + unit.slice(1)}</option>`;
+                });
+                
+                // Set default values
+                if (units.length > 1) {
+                    toUnit.value = units[1];
+                }
+                
+                unitSelectors.style.display = 'flex';
+                valueInputGroup.style.display = 'block';
+                convertBtn.style.display = 'block';
+            } else {
+                unitSelectors.style.display = 'none';
+                valueInputGroup.style.display = 'none';
+                convertBtn.style.display = 'none';
+            }
+            
+            conversionResult.style.display = 'none';
+        });
+
+        // Handle conversion on button click
+        convertBtn.addEventListener('click', () => {
+            const type = conversionType.value;
+            const from = fromUnit.value;
+            const to = toUnit.value;
+            const value = parseFloat(valueInput.value);
+            
+            if (type && from && to && !isNaN(value) && value >= 0) {
                 const result = conversions[type].convertTo(value, from, to);
                 convertedValue.textContent = result.toFixed(4);
                 conversionEquation.textContent = `${value} ${from} = ${result.toFixed(4)} ${to}`;
