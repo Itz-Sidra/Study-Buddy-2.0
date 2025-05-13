@@ -276,6 +276,22 @@
             background-color: #7642e0;
             transform: translateY(-2px);
         }
+
+        .submit-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: #7642e0;
+            transform: translateY(-2px);
+        }
         
         input[type="text"],
         input[type="number"],
@@ -806,33 +822,22 @@
                     </div>
                     <h2>SGPA Calculator</h2>
                 </div>
-                
-                <div id="credit-items">
-                    <div class="credit-item">
-                        <input type="text" class="course-name" placeholder="Course Name">
-                        <input type="number" class="course-credits" placeholder="Credits" min="1" max="10">
-                        <select class="course-grade">
-                            <option value="">Select Grade</option>
-                            <option value="10">O (10)</option>
-                            <option value="9">A+ (9)</option>
-                            <option value="8">A (8)</option>
-                            <option value="7">B+ (7)</option>
-                            <option value="6">B (6)</option>
-                            <option value="5">C (5)</option>
-                            <option value="4">P (4)</option>
-                            <option value="0">F (0)</option>
-                        </select>
+
+                <form id="sgpaForm">
+                    <label for="numSubjects">Number of Subjects:</label>
+                    <input type="number" id="numSubjects" name="numSubjects" min="1" required><br>
+                    
+                    <div id="subjectInputs"></div>
+                    
+                    <input type="submit" value="Calculate SGPA" class="submit-btn">
+                    <div class="result-display" id="sgpa-result" style="display: none;">
+                        <h3>Your SGPA</h3>
+                        <div class="result-value" id="sgpa-value">0.00</div>
                     </div>
-                </div>
-                
-                <button id="add-course-btn">Add Course</button>
-                <button id="calculate-sgpa-btn">Calculate SGPA</button>
-                
-                <div class="result-display" id="sgpa-result" style="display: none;">
-                    <h3>Your SGPA</h3>
-                    <div class="result-value" id="sgpa-value">0.00</div>
-                </div>
+                </form>
             </div>
+
+
             
             <!-- Physics Solver Module -->
             <div class="module" id="physics-solver">
@@ -1231,56 +1236,68 @@
         });
         
         // SGPA Calculator Functionality
-        const addCourseBtn = document.getElementById('add-course-btn');
-        const calculateSGPABtn = document.getElementById('calculate-sgpa-btn');
-        const creditItems = document.getElementById('credit-items');
-        const sgpaResult = document.getElementById('sgpa-result');
-        const sgpaValue = document.getElementById('sgpa-value');
-        
-        addCourseBtn.addEventListener('click', () => {
-            const creditItem = document.createElement('div');
-            creditItem.classList.add('credit-item');
-            creditItem.innerHTML = `
-                <input type="text" class="course-name" placeholder="Course Name">
-                <input type="number" class="course-credits" placeholder="Credits" min="1" max="10">
-                <select class="course-grade">
-                    <option value="">Select Grade</option>
-                    <option value="10">O (10)</option>
-                    <option value="9">A+ (9)</option>
-                    <option value="8">A (8)</option>
-                    <option value="7">B+ (7)</option>
-                    <option value="6">B (6)</option>
-                    <option value="5">C (5)</option>
-                    <option value="4">P (4)</option>
-                    <option value="0">F (0)</option>
-                </select>
-            `;
-            creditItems.appendChild(creditItem);
+        const sgpaForm = document.getElementById("sgpaForm");
+        const numSubjectsInput = document.getElementById("numSubjects");
+        const subjectInputsContainer = document.getElementById("subjectInputs");
+        const sgpaResult = document.getElementById("sgpa-result");
+        const sgpaValue = document.getElementById("sgpa-value");
+
+        numSubjectsInput.addEventListener("change", function() {
+            const numSubjects = parseInt(this.value);
+            let subjectInputsHTML = '';
+
+            for (let i = 1; i <= numSubjects; i++) {
+                subjectInputsHTML += `
+                    <label for="creditPoints_${i}">Credit ${i}:</label>
+                    <input type="number" id="creditPoints_${i}" name="creditPoints_${i}" min="1" required>
+                    <label for="gradeCharacter_${i}">Grade ${i}:</label>
+                    <select id="gradeCharacter_${i}" name="gradeCharacter_${i}">
+                        <option value="O">O</option>
+                        <option value="A+">A+</option>
+                        <option value="A">A</option>
+                        <option value="B+">B+</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="U">U</option>
+                    </select><br>
+                `;
+            }
+
+            subjectInputsContainer.innerHTML = subjectInputsHTML;
         });
-        
-        calculateSGPABtn.addEventListener('click', () => {
-            const credits = document.querySelectorAll('.course-credits');
-            const grades = document.querySelectorAll('.course-grade');
-            
-            let totalCredits = 0;
+
+        sgpaForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            const numSubjects = parseInt(numSubjectsInput.value);
             let totalGradePoints = 0;
-            
-            for (let i = 0; i < credits.length; i++) {
-                if (credits[i].value && grades[i].value) {
-                    const credit = parseFloat(credits[i].value);
-                    const grade = parseFloat(grades[i].value);
-                    
-                    totalCredits += credit;
-                    totalGradePoints += (credit * grade);
-                }
+            let totalCredits = 0;
+
+            for (let i = 1; i <= numSubjects; i++) {
+                const creditPoints = parseFloat(document.getElementById(`creditPoints_${i}`).value);
+                const gradeCharacter = document.getElementById(`gradeCharacter_${i}`).value;
+                const gradePoints = convertGradeToPoints(gradeCharacter);
+                totalGradePoints += creditPoints * gradePoints;
+                totalCredits += creditPoints;
             }
-            
-            if (totalCredits > 0) {
-                const sgpa = totalGradePoints / totalCredits;
-                sgpaValue.textContent = sgpa.toFixed(2);
-                sgpaResult.style.display = 'block';
-            }
+
+            const sgpa = totalGradePoints / totalCredits;
+            sgpaValue.textContent = sgpa.toFixed(3);
+            sgpaResult.style.display = 'block';
         });
+
+        function convertGradeToPoints(grade) {
+            switch(grade) {
+                case 'O': return 10;
+                case 'A+': return 9;
+                case 'A': return 8;
+                case 'B+': return 7;
+                case 'B': return 6;
+                case 'C': return 5;
+                case 'U': return 0;
+                default: return 0;
+            }
+        }
+
         
         // Physics Solver Functionality
         const formulaSelect = document.getElementById('formula-select');
