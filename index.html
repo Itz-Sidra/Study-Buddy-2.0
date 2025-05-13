@@ -1433,31 +1433,44 @@
         });
         
         solvePhysicsBtn.addEventListener('click', () => {
-            const selectedFormula = formulaSelect.value;
+        const selectedFormula = formulaSelect.value;
+        
+        if (selectedFormula && formulas[selectedFormula]) {
+            const formula = formulas[selectedFormula];
+            const values = {};
             
-            if (selectedFormula && formulas[selectedFormula]) {
-                const formula = formulas[selectedFormula];
-                const values = {};
+            // Get input values, handling negative signs
+            let allInputsFilled = true;
+            formula.variables.forEach(variable => {
+                const input = document.getElementById(variable.name);
                 
-                // Get input values
-                let allInputsFilled = true;
-                formula.variables.forEach(variable => {
-                    const input = document.getElementById(variable.name);
-                    if (input.value) {
-                        values[variable.name] = parseFloat(input.value);
+                // Check if the input value is not empty
+                if (input.value.trim() !== "") {
+                    // Parse the value and handle negative signs
+                    const value = parseFloat(input.value);
+                    
+                    if (!isNaN(value)) {
+                        values[variable.name] = value;
                     } else {
                         allInputsFilled = false;
                     }
-                });
-                
-                if (allInputsFilled) {
-                    const result = formula.solve(values);
-                    physicsAnswer.textContent = result.toFixed(2);
-                    physicsUnit.textContent = formula.unit;
-                    physicsResult.style.display = 'block';
+                } else {
+                    allInputsFilled = false;
                 }
+            });
+            
+            // Only solve if all inputs are filled and valid
+            if (allInputsFilled) {
+                const result = formula.solve(values);
+                physicsAnswer.textContent = result.toFixed(2);
+                physicsUnit.textContent = formula.unit;
+                physicsResult.style.display = 'block';
+            } else {
+                alert('Please fill in all inputs correctly.');
             }
-        });
+        }
+    });
+
         
         // Unit Converter Functionality
         const conversionType = document.getElementById('conversion-type');
