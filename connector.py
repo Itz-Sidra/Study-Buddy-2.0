@@ -76,6 +76,10 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_physics(query_string)
         elif path.startswith('/api/convert'):
             self.handle_convert(query_string)
+        elif path.startswith('/api/calculate-grade'):
+            self.handle_grade_calculation(query_string)
+        elif path.startswith('/api/calculate-sgpa'):
+            self.handle_sgpa_calculation(query_string)
         elif path == '/':
             # Serve the main index.html file
             self.path = '/index.html'
@@ -96,6 +100,10 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_physics(post_data)
         elif self.path.startswith('/api/convert'):
             self.handle_convert(post_data)
+        elif self.path.startswith('/api/calculate-grade'):
+            self.handle_grade_calculation(post_data)
+        elif self.path.startswith('/api/calculate-sgpa'):
+            self.handle_sgpa_calculation(post_data)
         else:
             self._set_headers()
             response = {'error': 'Unknown endpoint'}
@@ -233,7 +241,7 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
         response = {'success': True}
         self.wfile.write(json.dumps(response).encode())
     
-    # Physics solver handler - FIXED VERSION
+    # Physics solver handler
     def handle_physics(self, query_string):
         try:
             # Call the C backend with the query string
@@ -299,7 +307,7 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
             response = {'error': f'Backend execution failed: {str(e)}'}
             self.wfile.write(json.dumps(response).encode())
     
-    # Unit converter handler - FIXED VERSION
+    # Unit converter handler
     def handle_convert(self, query_string):
         try:
             # Call the C backend with the query string
@@ -324,6 +332,138 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
                 print(f"DEBUG: Backend stderr: {result.stderr}")
             
             # Fix: Properly extract JSON from the output
+            output = result.stdout.strip()
+            
+            # Find the actual JSON content after the headers
+            json_content = None
+            if '\r\n\r\n' in output:
+                # Split at the double newline that separates headers from body
+                headers, body = output.split('\r\n\r\n', 1)
+                json_content = body
+            else:
+                # If there's no header separator, check if it's just JSON
+                try:
+                    json.loads(output)
+                    json_content = output
+                except:
+                    # If parsing fails, look for the first { character
+                    start_idx = output.find('{')
+                    if start_idx >= 0:
+                        json_content = output[start_idx:]
+            
+            if json_content:
+                try:
+                    json_output = json.loads(json_content)
+                    self._set_headers()
+                    self.wfile.write(json.dumps(json_output).encode())
+                except json.JSONDecodeError as je:
+                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
+                    self._set_headers()
+                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
+                    self.wfile.write(json.dumps(response).encode())
+            else:
+                print(f"DEBUG: No JSON content found in: {output[:100]}")
+                self._set_headers()
+                response = {'error': 'Backend response contained no valid JSON data'}
+                self.wfile.write(json.dumps(response).encode())
+                
+        except Exception as e:
+            print(f"DEBUG: Exception: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Backend execution failed: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
+    
+    # Grade Calculator handler - NEW
+    def handle_grade_calculation(self, query_string):
+        try:
+            # Call the C backend with the query string
+            env = os.environ.copy()
+            env["QUERY_STRING"] = query_string
+            env["REQUEST_METHOD"] = self.command  # Use the actual request method
+            env["PATH_INFO"] = "/calculate-grade"
+            
+            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-grade, QUERY_STRING={query_string}")
+            
+            result = subprocess.run(
+                [BACKEND_EXECUTABLE],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Debug output if needed
+            if result.returncode != 0:
+                print(f"DEBUG: Backend exited with code {result.returncode}")
+                print(f"DEBUG: Backend stderr: {result.stderr}")
+            
+            # Process output
+            output = result.stdout.strip()
+            
+            # Find the actual JSON content after the headers
+            json_content = None
+            if '\r\n\r\n' in output:
+                # Split at the double newline that separates headers from body
+                headers, body = output.split('\r\n\r\n', 1)
+                json_content = body
+            else:
+                # If there's no header separator, check if it's just JSON
+                try:
+                    json.loads(output)
+                    json_content = output
+                except:
+                    # If parsing fails, look for the first { character
+                    start_idx = output.find('{')
+                    if start_idx >= 0:
+                        json_content = output[start_idx:]
+            
+            if json_content:
+                try:
+                    json_output = json.loads(json_content)
+                    self._set_headers()
+                    self.wfile.write(json.dumps(json_output).encode())
+                except json.JSONDecodeError as je:
+                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
+                    self._set_headers()
+                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
+                    self.wfile.write(json.dumps(response).encode())
+            else:
+                print(f"DEBUG: No JSON content found in: {output[:100]}")
+                self._set_headers()
+                response = {'error': 'Backend response contained no valid JSON data'}
+                self.wfile.write(json.dumps(response).encode())
+                
+        except Exception as e:
+            print(f"DEBUG: Exception: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Backend execution failed: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
+    
+    # SGPA Calculator handler - NEW
+    def handle_sgpa_calculation(self, query_string):
+        try:
+            # Call the C backend with the query string
+            env = os.environ.copy()
+            env["QUERY_STRING"] = query_string
+            env["REQUEST_METHOD"] = self.command  # Use the actual request method
+            env["PATH_INFO"] = "/calculate-sgpa"
+            
+            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-sgpa, QUERY_STRING={query_string}")
+            
+            result = subprocess.run(
+                [BACKEND_EXECUTABLE],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Debug output if needed
+            if result.returncode != 0:
+                print(f"DEBUG: Backend exited with code {result.returncode}")
+                print(f"DEBUG: Backend stderr: {result.stderr}")
+            
+            # Process output
             output = result.stdout.strip()
             
             # Find the actual JSON content after the headers

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 // HTTP response helper functions
 void send_response_header(bool is_json) {
@@ -160,7 +161,7 @@ double convert_volume(double value, const char* from, const char* to) {
     return -1; // Error case
 }
 
-    // Parse form data from query string
+// Parse form data from query string
 void parse_query_string(char* query, char* params[][2], int* num_params) {
     *num_params = 0;
     if (!query || strlen(query) == 0) {
@@ -199,6 +200,189 @@ const char* get_param(char* params[][2], int num_params, const char* name) {
         }
     }
     return NULL;
+}
+
+// Helper function to URL decode a string
+void url_decode(char* dst, const char* src) {
+    char a, b;
+    while (*src) {
+        if ((*src == '%') && ((a = src[1]) && (b = src[2])) && 
+            (isxdigit(a) && isxdigit(b))) {
+            if (a >= 'a')
+                a -= 'a'-'A';
+            if (a >= 'A')
+                a -= ('A' - 10);
+            else
+                a -= '0';
+            if (b >= 'a')
+                b -= 'a'-'A';
+            if (b >= 'A')
+                b -= ('A' - 10);
+            else
+                b -= '0';
+            *dst++ = 16*a+b;
+            src += 3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
+// SGPA Calculator Functions
+
+// Convert grade character to points based on the provided conversion table
+double convert_grade_to_points(const char* grade) {
+    if (strcmp(grade, "O") == 0) return 10.0;
+    else if (strcmp(grade, "A+") == 0) return 9.0;
+    else if (strcmp(grade, "A") == 0) return 8.0;
+    else if (strcmp(grade, "B+") == 0) return 7.0;
+    else if (strcmp(grade, "B") == 0) return 6.0;
+    else if (strcmp(grade, "C") == 0) return 5.0;
+    else if (strcmp(grade, "U") == 0) return 0.0;
+    else return -1.0; // Invalid grade
+}
+
+// Calculate SGPA based on credits and grades
+double calculate_sgpa(int num_subjects, double* credits, double* grade_points) {
+    double total_grade_points = 0.0;
+    double total_credits = 0.0;
+    
+    for (int i = 0; i < num_subjects; i++) {
+        total_grade_points += credits[i] * grade_points[i];
+        total_credits += credits[i];
+    }
+    
+    return (total_credits > 0) ? (total_grade_points / total_credits) : 0.0;
+}
+
+// Handle SGPA calculation
+void handle_sgpa_calculation(char* query) {
+    char* params[20][2]; // Increased to handle multiple subjects
+    int num_params = 0;
+    parse_query_string(query, params, &num_params);
+    
+    const char* num_subjects_str = get_param(params, num_params, "num_subjects");
+    
+    if (!num_subjects_str) {
+        send_response_header(true);
+        printf("{\"error\": \"Missing number of subjects\"}");
+        return;
+    }
+    
+    int num_subjects = atoi(num_subjects_str);
+    
+    if (num_subjects <= 0 || num_subjects > 10) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid number of subjects (must be between 1 and 10)\"}");
+        return;
+    }
+    
+    double credits[10] = {0};
+    double grade_points[10] = {0};
+    bool valid_inputs = true;
+    
+    for (int i = 1; i <= num_subjects; i++) {
+        char credit_param[20];
+        char grade_param[20];
+        
+        sprintf(credit_param, "creditPoints_%d", i);
+        sprintf(grade_param, "gradeCharacter_%d", i);
+        
+        const char* credit_str = get_param(params, num_params, credit_param);
+        const char* grade_str = get_param(params, num_params, grade_param);
+        
+        if (!credit_str || !grade_str) {
+            valid_inputs = false;
+            break;
+        }
+        
+        double credit = atof(credit_str);
+        double grade_point = convert_grade_to_points(grade_str);
+        
+        if (credit <= 0 || grade_point < 0) {
+            valid_inputs = false;
+            break;
+        }
+        
+        credits[i-1] = credit;
+        grade_points[i-1] = grade_point;
+    }
+    
+    if (!valid_inputs) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid or missing credit points or grades\"}");
+        return;
+    }
+    
+    double sgpa = calculate_sgpa(num_subjects, credits, grade_points);
+    
+    send_response_header(true);
+    printf("{\"sgpa\": %.3f}", sgpa);
+}
+
+// Grade Calculator Functions
+
+// Get the letter grade from a percentage
+const char* get_letter_grade(double percentage) {
+    if (percentage >= 90) return "A";
+    else if (percentage >= 80) return "B";
+    else if (percentage >= 70) return "C";
+    else if (percentage >= 60) return "D";
+    else return "F";
+}
+
+// Handle grade calculation
+void handle_grade_calculation(char* query) {
+    char* params[20][2]; // Increased to handle multiple grades
+    int num_params = 0;
+    parse_query_string(query, params, &num_params);
+    
+    const char* grades_str = get_param(params, num_params, "grades");
+    
+    if (!grades_str) {
+        send_response_header(true);
+        printf("{\"error\": \"Missing grades parameter\"}");
+        return;
+    }
+    
+    // Parse the comma-separated list of grades
+    char* grades_copy = strdup(grades_str);
+    if (!grades_copy) {
+        send_response_header(true);
+        printf("{\"error\": \"Memory allocation failed\"}");
+        return;
+    }
+    
+    char* token = strtok(grades_copy, ",");
+    double total_grade = 0.0;
+    int valid_grades = 0;
+    
+    while (token != NULL) {
+        double grade = atof(token);
+        if (grade >= 0 && grade <= 100) {
+            total_grade += grade;
+            valid_grades++;
+        }
+        token = strtok(NULL, ",");
+    }
+    
+    free(grades_copy);
+    
+    if (valid_grades == 0) {
+        send_response_header(true);
+        printf("{\"error\": \"No valid grades provided (values must be between 0 and 100)\"}");
+        return;
+    }
+    
+    double percentage = total_grade / valid_grades;
+    const char* letter = get_letter_grade(percentage);
+    
+    send_response_header(true);
+    printf("{\"average\": %.2f, \"letter\": \"%s\"}", percentage, letter);
 }
 
 // Solve physics problem
@@ -358,36 +542,6 @@ void handle_unit_conversion(char* query) {
     }
 }
 
-// Helper function to URL decode a string
-void url_decode(char* dst, const char* src) {
-    char a, b;
-    while (*src) {
-        if ((*src == '%') && ((a = src[1]) && (b = src[2])) && 
-            (isxdigit(a) && isxdigit(b))) {
-            if (a >= 'a')
-                a -= 'a'-'A';
-            if (a >= 'A')
-                a -= ('A' - 10);
-            else
-                a -= '0';
-            if (b >= 'a')
-                b -= 'a'-'A';
-            if (b >= 'A')
-                b -= ('A' - 10);
-            else
-                b -= '0';
-            *dst++ = 16*a+b;
-            src += 3;
-        } else if (*src == '+') {
-            *dst++ = ' ';
-            src++;
-        } else {
-            *dst++ = *src++;
-        }
-    }
-    *dst = '\0';
-}
-
 int main(void) {
     // Get request method and query string from environment
     char* request_method = getenv("REQUEST_METHOD");
@@ -411,6 +565,12 @@ int main(void) {
         }
         else if (strcmp(path_info, "/convert") == 0) {
             handle_unit_conversion(query_string ? query_string : "");
+        }
+        else if (strcmp(path_info, "/calculate-sgpa") == 0) {
+            handle_sgpa_calculation(query_string ? query_string : "");
+        }
+        else if (strcmp(path_info, "/calculate-grade") == 0) {
+            handle_grade_calculation(query_string ? query_string : "");
         }
         else {
             send_response_header(true);
@@ -449,6 +609,12 @@ int main(void) {
             else if (strcmp(path_info, "/convert") == 0) {
                 handle_unit_conversion(post_data);
             }
+            else if (strcmp(path_info, "/calculate-sgpa") == 0) {
+                handle_sgpa_calculation(post_data);
+            }
+            else if (strcmp(path_info, "/calculate-grade") == 0) {
+                handle_grade_calculation(post_data);
+            }
             else {
                 send_response_header(true);
                 printf("{\"error\": \"Unknown endpoint for POST: %s\"}", path_info);
@@ -462,6 +628,12 @@ int main(void) {
             }
             else if (strcmp(path_info, "/convert") == 0) {
                 handle_unit_conversion("");
+            }
+            else if (strcmp(path_info, "/calculate-sgpa") == 0) {
+                handle_sgpa_calculation("");
+            }
+            else if (strcmp(path_info, "/calculate-grade") == 0) {
+                handle_grade_calculation("");
             }
             else {
                 send_response_header(true);

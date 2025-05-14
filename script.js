@@ -294,36 +294,45 @@ addSubjectBtn.addEventListener('click', () => {
 
 calculateGradeBtn.addEventListener('click', () => {
     const grades = document.querySelectorAll('.subject-grade');
-    let totalGrade = 0;
-    let validGrades = 0;
+    const subjects = document.querySelectorAll('.subject-name');
+    let gradeValues = [];
     
-    grades.forEach(grade => {
-        if (grade.value && !isNaN(parseFloat(grade.value))) {
-            const value = parseFloat(grade.value);
+    // Collect grade data
+    for (let i = 0; i < grades.length; i++) {
+        if (grades[i].value && !isNaN(parseFloat(grades[i].value))) {
+            const value = parseFloat(grades[i].value);
             if (value >= 0 && value <= 100) {
-                totalGrade += value;
-                validGrades++;
+                gradeValues.push(value);
             }
         }
-    });
+    }
     
-    if (validGrades > 0) {
-        const percentage = totalGrade / validGrades;
-        averageGrade.textContent = percentage.toFixed(2) + '%';
+    if (gradeValues.length > 0) {
+        // Build query parameters - backend expects a comma-separated list
+        const queryParams = `grades=${gradeValues.join(',')}`;
         
-        let letter = '';
-        if (percentage >= 90) letter = 'A';
-        else if (percentage >= 80) letter = 'B';
-        else if (percentage >= 70) letter = 'C';
-        else if (percentage >= 60) letter = 'D';
-        else letter = 'F';
-        
-        gradeLetter.textContent = `Grade: ${letter}`;
-        gradeResult.style.display = 'block';
+        // Make API call to the backend for grade calculation with corrected endpoint
+        fetch(`/api/calculate-grade?${queryParams}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    averageGrade.textContent = data.average.toFixed(2) + '%';
+                    gradeLetter.textContent = `Grade: ${data.letter}`;
+                    gradeResult.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error calculating grade:', error);
+                alert('Failed to contact the server. Check your connection and try again.');
+            });
+    } else {
+        alert('Please add at least one valid grade.');
     }
 });
 
-// SGPA Calculator Functionality
+// UPDATED: SGPA Calculator to use C backend
 const sgpaForm = document.getElementById("sgpaForm");
 const numSubjectsInput = document.getElementById("numSubjects");
 const subjectInputsContainer = document.getElementById("subjectInputs");
@@ -357,34 +366,42 @@ numSubjectsInput.addEventListener("change", function() {
 sgpaForm.addEventListener("submit", function(event) {
     event.preventDefault();
     const numSubjects = parseInt(numSubjectsInput.value);
-    let totalGradePoints = 0;
-    let totalCredits = 0;
-
-    for (let i = 1; i <= numSubjects; i++) {
-        const creditPoints = parseFloat(document.getElementById(`creditPoints_${i}`).value);
-        const gradeCharacter = document.getElementById(`gradeCharacter_${i}`).value;
-        const gradePoints = convertGradeToPoints(gradeCharacter);
-        totalGradePoints += creditPoints * gradePoints;
-        totalCredits += creditPoints;
+    
+    if (numSubjects > 0) {
+        // Build query parameters
+        let queryParams = `num_subjects=${numSubjects}`;
+        
+        for (let i = 1; i <= numSubjects; i++) {
+            const creditPoints = document.getElementById(`creditPoints_${i}`).value;
+            const gradeCharacter = document.getElementById(`gradeCharacter_${i}`).value;
+            
+            if (!creditPoints || isNaN(parseFloat(creditPoints))) {
+                alert(`Please enter a valid credit value for subject ${i}`);
+                return;
+            }
+            
+            queryParams += `&credit${i}=${creditPoints}&grade${i}=${gradeCharacter}`;
+        }
+        
+        // Make API call to the backend for SGPA calculation
+        fetch(`/api/calculate-sgpa?${queryParams}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    sgpaValue.textContent = data.sgpa.toFixed(3);
+                    sgpaResult.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error calculating SGPA:', error);
+                alert('Failed to contact the server. Check your connection and try again.');
+            });
+    } else {
+        alert('Please specify a valid number of subjects.');
     }
-
-    const sgpa = totalGradePoints / totalCredits;
-    sgpaValue.textContent = sgpa.toFixed(3);
-    sgpaResult.style.display = 'block';
 });
-
-function convertGradeToPoints(grade) {
-    switch(grade) {
-        case 'O': return 10;
-        case 'A+': return 9;
-        case 'A': return 8;
-        case 'B+': return 7;
-        case 'B': return 6;
-        case 'C': return 5;
-        case 'U': return 0;
-        default: return 0;
-    }
-}
 
 // Physics Solver Functionality
 const formulaSelect = document.getElementById('formula-select');
