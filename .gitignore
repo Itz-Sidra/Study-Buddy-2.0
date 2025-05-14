@@ -1,1 +1,4 @@
-server.exe
+backend.exe
+backend.cgi
+study_buddy.db
+.vscode

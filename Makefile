@@ -1,11 +1,12 @@
+# Makefile for Study Buddy Backend
+
 CC = gcc
-CFLAGS = -Wall -O2 -mconsole
-TARGET = server
+CFLAGS = -Wall -Wextra -O2 -lm
 
-all: $(TARGET)
+all: study_buddy_backend
 
-$(TARGET): server.c
-	$(CC) $(CFLAGS) -o $(TARGET) server.c -lws2_32
+study_buddy_backend: backend.c
+	$(CC) $(CFLAGS) -o study_buddy_backend backend.c -lm
 
 clean:
-	rm -f $(TARGET).exe
+	rm -f study_buddy_backend
