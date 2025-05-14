@@ -261,7 +261,7 @@ double calculate_sgpa(int num_subjects, double* credits, double* grade_points) {
 
 // Handle SGPA calculation
 void handle_sgpa_calculation(char* query) {
-    char* params[20][2]; // Increased to handle multiple subjects
+    char* params[50][2]; // Increased to handle multiple subjects with longer param names
     int num_params = 0;
     parse_query_string(query, params, &num_params);
     
@@ -289,6 +289,7 @@ void handle_sgpa_calculation(char* query) {
         char credit_param[20];
         char grade_param[20];
         
+        // Match the parameter names from the frontend
         sprintf(credit_param, "creditPoints_%d", i);
         sprintf(grade_param, "gradeCharacter_%d", i);
         

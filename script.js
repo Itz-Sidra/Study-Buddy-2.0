@@ -332,7 +332,7 @@ calculateGradeBtn.addEventListener('click', () => {
     }
 });
 
-// UPDATED: SGPA Calculator to use C backend
+// SGPA Calculator to use C backend
 const sgpaForm = document.getElementById("sgpaForm");
 const numSubjectsInput = document.getElementById("numSubjects");
 const subjectInputsContainer = document.getElementById("subjectInputs");
@@ -380,7 +380,8 @@ sgpaForm.addEventListener("submit", function(event) {
                 return;
             }
             
-            queryParams += `&credit${i}=${creditPoints}&grade${i}=${gradeCharacter}`;
+            // Match the parameter names that the C backend is expecting
+            queryParams += `&creditPoints_${i}=${creditPoints}&gradeCharacter_${i}=${gradeCharacter}`;
         }
         
         // Make API call to the backend for SGPA calculation
