@@ -1,6 +1,8 @@
 # Study Buddy
 
-Welcome to **Study Buddy**! 🌟 Your all-in-one study companion that makes learning fun! ✨
+Welcome to **Study Buddy**! 
+<br>
+🌟 Your all-in-one study companion that makes learning fun! ✨
 
 Study Buddy is a versatile web application designed to help you with various aspects of your academic journey. Whether you're managing your tasks, calculating your grades, or solving physics problems, Study Buddy has you covered! 
 
@@ -65,24 +67,22 @@ The Makefile used in this project automates the build process. It compiles the C
 
 ```makefile
 CC = gcc
-CFLAGS = -Wall -O2 -mconsole
-TARGET = study_buddy
+CFLAGS = -Wall -Wextra -O2 -lm
 
-all: $(TARGET)
+all: study_buddy_backend
 
-$(TARGET): study_buddy.c
-	$(CC) $(CFLAGS) -o $(TARGET) study_buddy.c -lws2_32
+study_buddy_backend: backend.c
+	$(CC) $(CFLAGS) -o study_buddy_backend backend.c -lm
 
 clean:
-	rm -f $(TARGET).exe
+	rm -f study_buddy_backend
 ````
 
 ### Key Makefile Steps:
 
 * **CC**: Specifies the compiler (`gcc` for C).
-* **CFLAGS**: Compiler flags (`-Wall` for warnings, `-O2` for optimization, `-mconsole` for Windows console).
-* **TARGET**: The output executable (`study_buddy`).
-* **all**: Default target that builds the project by compiling `study_buddy.c`.
+* **CFLAGS**: Compiler flags (`-Wall` for warnings, `-O2` for optimization, `-lm` for mathematical calculaion).
+* **all**: Default target that builds the project by compiling `backend.c`.
 * **clean**: Removes the executable file.
 
 ## Usage
