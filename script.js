@@ -690,6 +690,7 @@ const prevFlashcardBtn = document.getElementById('prev-flashcard-btn');
 const flipFlashcardBtn = document.getElementById('flip-flashcard-btn');
 const nextFlashcardBtn = document.getElementById('next-flashcard-btn');
 const flashcardsControls = document.querySelector('.flashcards-controls');
+const deleteFlashcardBtn = document.getElementById('delete-flashcard-btn');
 
 // Initialize flashcards
 let flashcards = [];
@@ -701,7 +702,9 @@ function loadFlashcards() {
         .then(response => response.json())
         .then(data => {
             flashcards = data;
+            currentFlashcardIndex = 0; // Reset to first card when loading
             renderFlashcards();
+            updateFlashcardControls();
         })
         .catch(error => {
             console.error('Error loading flashcards:', error);
@@ -715,6 +718,8 @@ function renderFlashcards() {
     if (flashcards.length > 0) {
         const flashcard = document.createElement('div');
         flashcard.classList.add('flashcard');
+        flashcard.setAttribute('data-id', flashcards[currentFlashcardIndex].id);
+        
         flashcard.innerHTML = `
             <div class="flashcard-inner">
                 <div class="flashcard-front">
@@ -727,14 +732,41 @@ function renderFlashcards() {
         `;
         
         flashcardsContainer.appendChild(flashcard);
-        flashcardsControls.style.display = 'flex';
         
         // Add click event to flip the card
         flashcard.addEventListener('click', () => {
             flashcard.classList.toggle('flipped');
         });
     } else {
+        flashcardsContainer.innerHTML = '<div class="no-flashcards">No flashcards yet. Add some!</div>';
+    }
+    
+    updateFlashcardControls();
+}
+
+// Update flashcard controls visibility and counters
+function updateFlashcardControls() {
+    if (flashcards.length > 0) {
+        flashcardsControls.style.display = 'flex';
+        
+        // Add card counter if needed
+        const cardCounter = document.getElementById('card-counter') || document.createElement('div');
+        cardCounter.id = 'card-counter';
+        cardCounter.textContent = `Card ${currentFlashcardIndex + 1} of ${flashcards.length}`;
+        
+        if (!document.getElementById('card-counter')) {
+            flashcardsControls.appendChild(cardCounter);
+        }
+        
+        // Enable/disable navigation buttons based on position
+        if (deleteFlashcardBtn) {
+            deleteFlashcardBtn.style.display = 'block';
+        }
+    } else {
         flashcardsControls.style.display = 'none';
+        if (deleteFlashcardBtn) {
+            deleteFlashcardBtn.style.display = 'none';
+        }
     }
 }
 
@@ -759,7 +791,6 @@ addFlashcardBtn.addEventListener('click', () => {
                 flashcardFront.value = '';
                 flashcardBack.value = '';
                 loadFlashcards(); // Reload flashcards from server
-                currentFlashcardIndex = flashcards.length; // Set to the new card
             }
         })
         .catch(error => {
@@ -767,6 +798,31 @@ addFlashcardBtn.addEventListener('click', () => {
         });
     }
 });
+
+// Delete current flashcard
+function deleteCurrentFlashcard() {
+    if (flashcards.length > 0) {
+        const flashcardId = flashcards[currentFlashcardIndex].id;
+        
+        fetch(`/api/flashcards/${flashcardId}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadFlashcards(); // Reload flashcards from server
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting flashcard:', error);
+        });
+    }
+}
+
+// Add delete button event listener if it exists
+if (deleteFlashcardBtn) {
+    deleteFlashcardBtn.addEventListener('click', deleteCurrentFlashcard);
+}
 
 // Navigation and flip controls
 prevFlashcardBtn.addEventListener('click', () => {

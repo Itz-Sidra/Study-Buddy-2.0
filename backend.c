@@ -845,6 +845,159 @@ void handle_unit_conversion(char* query) {
     }
 }
 
+// Flashcard Functionality
+#define MAX_FLASHCARDS 100
+#define MAX_FLASHCARD_TEXT_LENGTH 500
+
+typedef struct {
+    int id;
+    char front[MAX_FLASHCARD_TEXT_LENGTH];
+    char back[MAX_FLASHCARD_TEXT_LENGTH];
+} Flashcard;
+
+// In-memory storage for flashcards (in a real application, this would be in a database)
+Flashcard flashcards[MAX_FLASHCARDS];
+int next_flashcard_id = 1;
+int flashcard_count = 0;
+
+// Function to add a new flashcard
+void add_flashcard(const char* front, const char* back) {
+    if (flashcard_count < MAX_FLASHCARDS) {
+        Flashcard new_flashcard;
+        new_flashcard.id = next_flashcard_id++;
+        
+        // Copy front text with length limit to prevent buffer overflow
+        strncpy(new_flashcard.front, front, MAX_FLASHCARD_TEXT_LENGTH - 1);
+        new_flashcard.front[MAX_FLASHCARD_TEXT_LENGTH - 1] = '\0'; // Ensure null termination
+        
+        // Copy back text with length limit to prevent buffer overflow
+        strncpy(new_flashcard.back, back, MAX_FLASHCARD_TEXT_LENGTH - 1);
+        new_flashcard.back[MAX_FLASHCARD_TEXT_LENGTH - 1] = '\0'; // Ensure null termination
+        
+        flashcards[flashcard_count++] = new_flashcard;
+    }
+}
+
+// Function to get a flashcard by ID
+Flashcard* get_flashcard_by_id(int id) {
+    for (int i = 0; i < flashcard_count; i++) {
+        if (flashcards[i].id == id) {
+            return &flashcards[i];
+        }
+    }
+    return NULL;
+}
+
+// Function to delete a flashcard
+bool delete_flashcard(int id) {
+    for (int i = 0; i < flashcard_count; i++) {
+        if (flashcards[i].id == id) {
+            // Move all flashcards after this one forward
+            for (int j = i; j < flashcard_count - 1; j++) {
+                flashcards[j] = flashcards[j + 1];
+            }
+            flashcard_count--;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Handle getting all flashcards
+void handle_get_flashcards() {
+    send_response_header(true);
+    
+    printf("[");
+    for (int i = 0; i < flashcard_count; i++) {
+        printf("{\"id\": %d, \"front\": \"%s\", \"back\": \"%s\"}",
+               flashcards[i].id,
+               flashcards[i].front,
+               flashcards[i].back);
+        
+        if (i < flashcard_count - 1) {
+            printf(",");
+        }
+    }
+    printf("]");
+}
+
+// Handle creating a new flashcard
+void handle_create_flashcard(char* post_data) {
+    char* params[10][2];
+    int num_params = 0;
+    
+    // Parse JSON body
+    parse_json_body(post_data, params, &num_params);
+    
+    const char* front = get_param(params, num_params, "front");
+    const char* back = get_param(params, num_params, "back");
+    
+    if (!front || strlen(front) == 0 || !back || strlen(back) == 0) {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Front and back are required\"}");
+        return;
+    }
+    
+    // Decode URL encoded data
+    char decoded_front[MAX_FLASHCARD_TEXT_LENGTH];
+    char decoded_back[MAX_FLASHCARD_TEXT_LENGTH];
+    url_decode(decoded_front, front);
+    url_decode(decoded_back, back);
+    
+    add_flashcard(decoded_front, decoded_back);
+    
+    send_response_header(true);
+    printf("{\"success\": true, \"id\": %d}", next_flashcard_id - 1);
+    
+    // Free allocated memory for parameters
+    for (int i = 0; i < num_params; i++) {
+        free(params[i][0]);
+        free(params[i][1]);
+    }
+}
+
+// Handle deleting a flashcard
+void handle_delete_flashcard(char* path_info) {
+    // Extract flashcard ID from path
+    int flashcard_id = 0;
+    sscanf(path_info, "/flashcards/%d", &flashcard_id);
+    
+    if (flashcard_id <= 0) {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Invalid flashcard ID\"}");
+        return;
+    }
+    
+    bool success = delete_flashcard(flashcard_id);
+    
+    send_response_header(true);
+    if (success) {
+        printf("{\"success\": true}");
+    } else {
+        printf("{\"success\": false, \"error\": \"Flashcard not found\"}");
+    }
+}
+
+// Main handler for flashcards API
+void handle_flashcards(char* request_method, char* path_info, char* query_string, char* post_data) {
+    // GET all flashcards
+    if (strcmp(request_method, "GET") == 0 && (strcmp(path_info, "/flashcards") == 0)) {
+        handle_get_flashcards();
+    }
+    // POST - create new flashcard
+    else if (strcmp(request_method, "POST") == 0 && (strcmp(path_info, "/flashcards") == 0)) {
+        handle_create_flashcard(post_data);
+    }
+    // DELETE - delete flashcard
+    else if (strcmp(request_method, "DELETE") == 0 && strncmp(path_info, "/flashcards/", 12) == 0) {
+        handle_delete_flashcard(path_info);
+    }
+    else {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Invalid flashcards endpoint or method\"}");
+    }
+}
+
 int main(void) {
     // Get request method and query string from environment
     char* request_method = getenv("REQUEST_METHOD");
@@ -877,6 +1030,9 @@ int main(void) {
         }
         else if (strcmp(path_info, "/tasks") == 0 || strncmp(path_info, "/tasks/", 7) == 0) {
             handle_tasks(request_method, path_info, query_string, NULL);
+        }
+        else if (strcmp(path_info, "/flashcards") == 0 || strncmp(path_info, "/flashcards/", 12) == 0) {
+            handle_flashcards(request_method, path_info, query_string, NULL);
         }
         else {
             send_response_header(true);
@@ -928,6 +1084,9 @@ int main(void) {
         }
         else if (strcmp(path_info, "/tasks") == 0 || strncmp(path_info, "/tasks/", 7) == 0) {
             handle_tasks(request_method, path_info, query_string, post_data);
+        }
+        else if (strcmp(path_info, "/flashcards") == 0 || strncmp(path_info, "/flashcards/", 12) == 0) {
+            handle_flashcards(request_method, path_info, query_string, post_data);
         }
         else {
             send_response_header(true);

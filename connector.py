@@ -461,48 +461,90 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
 
     # Flashcard handlers
     def handle_flashcards_get(self):
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, front, back FROM flashcards')
-        flashcards = []
-        for row in cursor.fetchall():
-            flashcards.append({
-                'id': row[0],
-                'front': row[1],
-                'back': row[2]
-            })
-        conn.close()
-        
-        self._set_headers()
-        self.wfile.write(json.dumps(flashcards).encode())
-    
+        try:
+            conn = sqlite3.connect(DATABASE_FILE)
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, front, back FROM flashcards')
+            flashcards = []
+            for row in cursor.fetchall():
+                flashcards.append({
+                    'id': row[0],
+                    'front': row[1],
+                    'back': row[2]
+                })
+            conn.close()
+            
+            self._set_headers()
+            self.wfile.write(json.dumps(flashcards).encode())
+        except Exception as e:
+            print(f"DEBUG: Exception in handle_flashcards_get: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Database error: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
+
     def handle_flashcards_post(self, post_data):
-        flashcard_data = json.loads(post_data)
-        
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO flashcards (front, back) VALUES (?, ?)',
-            (flashcard_data.get('front', ''), flashcard_data.get('back', ''))
-        )
-        flashcard_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        self._set_headers()
-        response = {'id': flashcard_id, 'success': True}
-        self.wfile.write(json.dumps(response).encode())
-    
+        try:
+            flashcard_data = json.loads(post_data)
+            
+            # Validate input
+            if not flashcard_data.get('front') or not flashcard_data.get('back'):
+                self._set_headers()
+                response = {'error': 'Front and back content are required'}
+                self.wfile.write(json.dumps(response).encode())
+                return
+                
+            conn = sqlite3.connect(DATABASE_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO flashcards (front, back) VALUES (?, ?)',
+                (flashcard_data.get('front', ''), flashcard_data.get('back', ''))
+            )
+            flashcard_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            self._set_headers()
+            response = {'id': flashcard_id, 'success': True}
+            self.wfile.write(json.dumps(response).encode())
+        except json.JSONDecodeError:
+            self._set_headers()
+            response = {'error': 'Invalid JSON data'}
+            self.wfile.write(json.dumps(response).encode())
+        except Exception as e:
+            print(f"DEBUG: Exception in handle_flashcards_post: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Database error: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
+
     def handle_flashcard_delete(self, flashcard_id):
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM flashcards WHERE id = ?', (flashcard_id,))
-        conn.commit()
-        conn.close()
-        
-        self._set_headers()
-        response = {'success': True}
-        self.wfile.write(json.dumps(response).encode())
+        try:
+            # Validate flashcard_id is numeric
+            try:
+                flashcard_id = int(flashcard_id)
+            except ValueError:
+                self._set_headers()
+                response = {'error': 'Invalid flashcard ID'}
+                self.wfile.write(json.dumps(response).encode())
+                return
+                
+            conn = sqlite3.connect(DATABASE_FILE)
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM flashcards WHERE id = ?', (flashcard_id,))
+            deleted = cursor.rowcount > 0
+            conn.commit()
+            conn.close()
+            
+            self._set_headers()
+            if deleted:
+                response = {'success': True}
+            else:
+                response = {'success': False, 'error': 'Flashcard not found'}
+            self.wfile.write(json.dumps(response).encode())
+        except Exception as e:
+            print(f"DEBUG: Exception in handle_flashcard_delete: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Database error: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
 
 def main():
     # Initialize database
