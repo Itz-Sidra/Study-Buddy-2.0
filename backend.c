@@ -10,6 +10,10 @@ void send_response_header(bool is_json) {
     printf("Content-Type: %s\r\n\r\n", is_json ? "application/json" : "text/plain");
 }
 
+void parse_json_body(char* post_data, char* params[][2], int* num_params);
+void sanitize_input(const char* input, char* output, size_t output_size);
+bool is_valid_unit(const char* type, const char* unit);
+
 // Parse form data from query string
 void parse_query_string(char* query, char* params[][2], int* num_params) {
     *num_params = 0;
@@ -205,13 +209,70 @@ void handle_create_task(char* post_data) {
         return;
     }
     
+    // Validate date format if provided (YYYY-MM-DD)
+    if (date && strlen(date) > 0) {
+        if (strlen(date) != 10 || date[4] != '-' || date[7] != '-') {
+            send_response_header(true);
+            printf("{\"success\": false, \"error\": \"Invalid date format. Use YYYY-MM-DD\"}");
+            return;
+        }
+        
+        // Check if digits are in the correct positions
+        for (int i = 0; i < 10; i++) {
+            if ((i == 4 || i == 7) && date[i] != '-') {
+                send_response_header(true);
+                printf("{\"success\": false, \"error\": \"Invalid date format. Use YYYY-MM-DD\"}");
+                return;
+            } else if (i != 4 && i != 7 && !isdigit(date[i])) {
+                send_response_header(true);
+                printf("{\"success\": false, \"error\": \"Invalid date format. Use YYYY-MM-DD\"}");
+                return;
+            }
+        }
+        
+        // Validate month and day values
+        int year = (date[0] - '0') * 1000 + (date[1] - '0') * 100 + (date[2] - '0') * 10 + (date[3] - '0');
+        int month = (date[5] - '0') * 10 + (date[6] - '0');
+        int day = (date[8] - '0') * 10 + (date[9] - '0');
+        
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+            send_response_header(true);
+            printf("{\"success\": false, \"error\": \"Invalid date values\"}");
+            return;
+        }
+        
+        // Additional validation for months with fewer than 31 days
+        if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
+            send_response_header(true);
+            printf("{\"success\": false, \"error\": \"Invalid day for selected month\"}");
+            return;
+        }
+        
+        // February validation including leap years
+        if (month == 2) {
+            bool is_leap_year = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+            int max_days = is_leap_year ? 29 : 28;
+            
+            if (day > max_days) {
+                send_response_header(true);
+                printf("{\"success\": false, \"error\": \"Invalid day for February\"}");
+                return;
+            }
+        }
+    }
+    
     bool completed = completed_str && strcmp(completed_str, "true") == 0;
     
     // Decode URL encoded data
     char decoded_title[MAX_TITLE_LENGTH];
     url_decode(decoded_title, title);
     
-    add_task(decoded_title, date, completed);
+    // Sanitize title input to prevent XSS or other injection issues
+    // Simple sanitization - remove HTML tags (a more robust solution would use a library)
+    char sanitized_title[MAX_TITLE_LENGTH];
+    sanitize_input(decoded_title, sanitized_title, MAX_TITLE_LENGTH);
+    
+    add_task(sanitized_title, date, completed);
     
     send_response_header(true);
     printf("{\"success\": true, \"id\": %d}", next_task_id - 1);
@@ -221,6 +282,25 @@ void handle_create_task(char* post_data) {
         free(params[i][0]);
         free(params[i][1]);
     }
+}
+
+// Helper function to sanitize input 
+void sanitize_input(const char* input, char* output, size_t output_size) {
+    size_t i = 0, j = 0;
+    bool in_tag = false;
+    
+    // Simple sanitization removing HTML tags
+    while (input[i] != '\0' && j < output_size - 1) {
+        if (input[i] == '<') {
+            in_tag = true;
+        } else if (input[i] == '>') {
+            in_tag = false;
+        } else if (!in_tag) {
+            output[j++] = input[i];
+        }
+        i++;
+    }
+    output[j] = '\0';
 }
 
 // Handle updating a task
@@ -585,95 +665,277 @@ void handle_physics_solver(char* query) {
         return;
     }
     
+    // Validate formula type first
+    if (!(
+        strcmp(formula, "velocity") == 0 || 
+        strcmp(formula, "distance") == 0 || 
+        strcmp(formula, "velocity-squared") == 0 || 
+        strcmp(formula, "force") == 0 || 
+        strcmp(formula, "kinetic-energy") == 0 || 
+        strcmp(formula, "potential-energy") == 0 || 
+        strcmp(formula, "ohms-law") == 0 || 
+        strcmp(formula, "power") == 0
+    )) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid formula type\"}");
+        return;
+    }
+    
     double result = -1;
+    char* endptr;
     
     if (strcmp(formula, "velocity") == 0) {
         const char* u_str = get_param(params, num_params, "u");
         const char* a_str = get_param(params, num_params, "a");
         const char* t_str = get_param(params, num_params, "t");
         
-        if (u_str && a_str && t_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double t = atof(t_str);
-            result = velocity_formula(u, a, t);
+        if (!u_str || !a_str || !t_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for velocity formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double u = strtod(u_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid initial velocity value\"}");
+            return;
+        }
+        
+        double a = strtod(a_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid acceleration value\"}");
+            return;
+        }
+        
+        double t = strtod(t_str, &endptr);
+        if (*endptr != '\0' || t < 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid time value (must be non-negative)\"}");
+            return;
+        }
+        
+        result = velocity_formula(u, a, t);
     } 
     else if (strcmp(formula, "distance") == 0) {
         const char* u_str = get_param(params, num_params, "u");
         const char* a_str = get_param(params, num_params, "a");
         const char* t_str = get_param(params, num_params, "t");
         
-        if (u_str && a_str && t_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double t = atof(t_str);
-            result = distance_formula(u, a, t);
+        if (!u_str || !a_str || !t_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for distance formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double u = strtod(u_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid initial velocity value\"}");
+            return;
+        }
+        
+        double a = strtod(a_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid acceleration value\"}");
+            return;
+        }
+        
+        double t = strtod(t_str, &endptr);
+        if (*endptr != '\0' || t < 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid time value (must be non-negative)\"}");
+            return;
+        }
+        
+        result = distance_formula(u, a, t);
     }
     else if (strcmp(formula, "velocity-squared") == 0) {
         const char* u_str = get_param(params, num_params, "u");
         const char* a_str = get_param(params, num_params, "a");
         const char* s_str = get_param(params, num_params, "s");
         
-        if (u_str && a_str && s_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double s = atof(s_str);
-            result = velocity_squared_formula(u, a, s);
+        if (!u_str || !a_str || !s_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for velocity-squared formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double u = strtod(u_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid initial velocity value\"}");
+            return;
+        }
+        
+        double a = strtod(a_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid acceleration value\"}");
+            return;
+        }
+        
+        double s = strtod(s_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid distance value\"}");
+            return;
+        }
+        
+        result = velocity_squared_formula(u, a, s);
     }
     else if (strcmp(formula, "force") == 0) {
         const char* m_str = get_param(params, num_params, "m");
         const char* a_str = get_param(params, num_params, "a");
         
-        if (m_str && a_str) {
-            double m = atof(m_str);
-            double a = atof(a_str);
-            result = force_formula(m, a);
+        if (!m_str || !a_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for force formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double m = strtod(m_str, &endptr);
+        if (*endptr != '\0' || m <= 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid mass value (must be positive)\"}");
+            return;
+        }
+        
+        double a = strtod(a_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid acceleration value\"}");
+            return;
+        }
+        
+        result = force_formula(m, a);
     }
     else if (strcmp(formula, "kinetic-energy") == 0) {
         const char* m_str = get_param(params, num_params, "m");
         const char* v_str = get_param(params, num_params, "v");
         
-        if (m_str && v_str) {
-            double m = atof(m_str);
-            double v = atof(v_str);
-            result = kinetic_energy_formula(m, v);
+        if (!m_str || !v_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for kinetic-energy formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double m = strtod(m_str, &endptr);
+        if (*endptr != '\0' || m <= 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid mass value (must be positive)\"}");
+            return;
+        }
+        
+        double v = strtod(v_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid velocity value\"}");
+            return;
+        }
+        
+        result = kinetic_energy_formula(m, v);
     }
     else if (strcmp(formula, "potential-energy") == 0) {
         const char* m_str = get_param(params, num_params, "m");
         const char* g_str = get_param(params, num_params, "g");
         const char* h_str = get_param(params, num_params, "h");
         
-        if (m_str && h_str) {
-            double m = atof(m_str);
-            double g = g_str ? atof(g_str) : 9.8; // Use default if not provided
-            double h = atof(h_str);
-            result = potential_energy_formula(m, g, h);
+        if (!m_str || !h_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for potential-energy formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double m = strtod(m_str, &endptr);
+        if (*endptr != '\0' || m <= 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid mass value (must be positive)\"}");
+            return;
+        }
+        
+        double g;
+        if (g_str) {
+            g = strtod(g_str, &endptr);
+            if (*endptr != '\0' || g <= 0) {
+                send_response_header(true);
+                printf("{\"error\": \"Invalid gravitational acceleration value (must be positive)\"}");
+                return;
+            }
+        } else {
+            g = 9.8; // Default value
+        }
+        
+        double h = strtod(h_str, &endptr);
+        if (*endptr != '\0' || h < 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid height value (must be non-negative)\"}");
+            return;
+        }
+        
+        result = potential_energy_formula(m, g, h);
     }
     else if (strcmp(formula, "ohms-law") == 0) {
         const char* i_str = get_param(params, num_params, "i");
         const char* r_str = get_param(params, num_params, "r");
         
-        if (i_str && r_str) {
-            double i = atof(i_str);
-            double r = atof(r_str);
-            result = ohms_law_formula(i, r);
+        if (!i_str || !r_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for ohms-law formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double i = strtod(i_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid current value\"}");
+            return;
+        }
+        
+        double r = strtod(r_str, &endptr);
+        if (*endptr != '\0' || r <= 0) {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid resistance value (must be positive)\"}");
+            return;
+        }
+        
+        result = ohms_law_formula(i, r);
     }
     else if (strcmp(formula, "power") == 0) {
         const char* v_str = get_param(params, num_params, "v");
         const char* i_str = get_param(params, num_params, "i");
         
-        if (v_str && i_str) {
-            double v = atof(v_str);
-            double i = atof(i_str);
-            result = power_formula(v, i);
+        if (!v_str || !i_str) {
+            send_response_header(true);
+            printf("{\"error\": \"Missing required parameters for power formula\"}");
+            return;
         }
+        
+        // Validate numeric inputs
+        double v = strtod(v_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid voltage value\"}");
+            return;
+        }
+        
+        double i = strtod(i_str, &endptr);
+        if (*endptr != '\0') {
+            send_response_header(true);
+            printf("{\"error\": \"Invalid current value\"}");
+            return;
+        }
+        
+        result = power_formula(v, i);
     }
     
     send_response_header(true);
@@ -818,7 +1080,35 @@ void handle_unit_conversion(char* query) {
         return;
     }
     
-    double value = atof(value_str);
+    // Validate that value is a valid number
+    char* endptr;
+    double value = strtod(value_str, &endptr);
+    
+    // Check if conversion was successful and the entire string was used
+    if (*endptr != '\0' || value_str == endptr) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid numeric value\"}");
+        return;
+    }
+    
+    // Check for negative values where they don't make sense
+    if (value < 0 && (
+        strcmp(type, "length") == 0 || 
+        strcmp(type, "mass") == 0 || 
+        strcmp(type, "time") == 0 || 
+        strcmp(type, "volume") == 0)) {
+        send_response_header(true);
+        printf("{\"error\": \"Negative values not allowed for this conversion type\"}");
+        return;
+    }
+    
+    // Validate unit types are valid for the selected conversion type
+    if (!is_valid_unit(type, from) || !is_valid_unit(type, to)) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid unit for selected conversion type\"}");
+        return;
+    }
+    
     double result = -1;
     
     if (strcmp(type, "length") == 0) {
@@ -843,6 +1133,62 @@ void handle_unit_conversion(char* query) {
     } else {
         printf("{\"error\": \"Invalid conversion parameters\"}");
     }
+}
+
+// Helper function to check if a unit is valid for a specific conversion type
+bool is_valid_unit(const char* type, const char* unit) {
+    if (strcmp(type, "length") == 0) {
+        return (
+            strcmp(unit, "meter") == 0 ||
+            strcmp(unit, "centimeter") == 0 ||
+            strcmp(unit, "kilometer") == 0 ||
+            strcmp(unit, "inch") == 0 ||
+            strcmp(unit, "foot") == 0 ||
+            strcmp(unit, "yard") == 0 ||
+            strcmp(unit, "mile") == 0
+        );
+    }
+    else if (strcmp(type, "mass") == 0) {
+        return (
+            strcmp(unit, "kilogram") == 0 ||
+            strcmp(unit, "gram") == 0 ||
+            strcmp(unit, "milligram") == 0 ||
+            strcmp(unit, "pound") == 0 ||
+            strcmp(unit, "ounce") == 0 ||
+            strcmp(unit, "ton") == 0
+        );
+    }
+    else if (strcmp(type, "temperature") == 0) {
+        return (
+            strcmp(unit, "celsius") == 0 ||
+            strcmp(unit, "fahrenheit") == 0 ||
+            strcmp(unit, "kelvin") == 0
+        );
+    }
+    else if (strcmp(type, "time") == 0) {
+        return (
+            strcmp(unit, "second") == 0 ||
+            strcmp(unit, "minute") == 0 ||
+            strcmp(unit, "hour") == 0 ||
+            strcmp(unit, "day") == 0 ||
+            strcmp(unit, "week") == 0 ||
+            strcmp(unit, "month") == 0 ||
+            strcmp(unit, "year") == 0
+        );
+    }
+    else if (strcmp(type, "volume") == 0) {
+        return (
+            strcmp(unit, "liter") == 0 ||
+            strcmp(unit, "milliliter") == 0 ||
+            strcmp(unit, "cubic_meter") == 0 ||
+            strcmp(unit, "gallon") == 0 ||
+            strcmp(unit, "quart") == 0 ||
+            strcmp(unit, "pint") == 0 ||
+            strcmp(unit, "cup") == 0
+        );
+    }
+    
+    return false;
 }
 
 // Flashcard Functionality
