@@ -547,25 +547,43 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode())
 
 def main():
+    import socket
+    from qrcode import make
+
+    # Get local IP for QR code generation
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    url = f"http://{local_ip}:{PORT}/"
+
+    # Generate and show QR code
+    img = make(url)
+    img.save("studybuddy_qr.png")
+    print(f"\n🌐 Server running at: {url}")
+    print("📲 Scan the QR code from 'studybuddy_qr.png' to access on mobile!")
+    try:
+        img.show()
+    except:
+        print("⚠️ Couldn't open QR image automatically. You can find it as 'studybuddy_qr.png'.")
+
     # Initialize database
     init_db()
-    
+
     # Compile the C backend
     try:
         subprocess.run(['gcc', '-o', BACKEND_EXECUTABLE, 'backend.c', '-lm'], check=True)
-        print(f"Successfully compiled backend.c to {BACKEND_EXECUTABLE}")
+        print(f"✅ Successfully compiled backend.c to {BACKEND_EXECUTABLE}")
     except subprocess.CalledProcessError as e:
-        print(f"Error compiling backend.c: {e}")
+        print(f"❌ Error compiling backend.c: {e}")
         return
-    
-    # Start the web server
+
+    # Start the server
     handler = StudyBuddyHandler
     with socketserver.TCPServer(("", PORT), handler) as httpd:
-        print(f"Server started at http://localhost:{PORT}")
+        print(f"🖥️ Server started at http://localhost:{PORT}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("Server stopped.")
+            print("🛑 Server stopped.")
 
 if __name__ == "__main__":
     main()
