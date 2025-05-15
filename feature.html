@@ -3,104 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Buddy - Features</title>
-    <link href="styles.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        :root {
-            --primary: #8C52FF;
-            --secondary: #FF6B6B;
-            --accent1: #5CE1E6;
-            --accent2: #FFDE59;
-            --accent3: #72EFB1;
-            --dark: #212529;
-            --light: #F8F9FA;
-            --mid: #6C757D;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background-color: var(--light);
-            color: var(--dark);
-            font-family: 'Poppins', sans-serif;
-            padding-top: 70px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        h1 {
-            color: var(--primary);
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        .feature {
-            background-color: var(--accent1);
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .feature:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-        }
-        .feature h2 {
-            color: var(--secondary);
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-        }
-        .feature p {
-            font-size: 1.1rem;
-            color: var(--dark);
-        }
-    </style>
+    <title>Features - Study Buddy</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header>
         <div class="logo">
+            <i class="fas fa-book-reader"></i>
             <h1>Study Buddy</h1>
         </div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="feature.html">Features</a>
+        </nav>
+        <button class="mobile-nav-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
     </header>
-
-    <div class="container">
-        <h1>Features</h1>
-        <div class="feature">
-            <h2>To-Do List</h2>
-            <p>Keep track of your tasks and deadlines. Organize your study schedule and stay on top of your work.</p>
-        </div>
-        <div class="feature">
-            <h2>Grade Calculator</h2>
-            <p>Calculate your grades and monitor your academic progress in real-time.</p>
-        </div>
-        <div class="feature">
-            <h2>SGPA Calculator</h2>
-            <p>Track your academic performance and calculate your SGPA to understand where you stand.</p>
-        </div>
-        <div class="feature">
-            <h2>Physics Solver</h2>
-            <p>A collection of physics formulas to solve problems in an instant. Just choose your formula from a dropdown, and get the results!</p>
-        </div>
-        <div class="feature">
-            <h2>Unit Converter</h2>
-            <p>Easily convert between different units. Whether it's distance, mass, or time, this tool helps you get the right conversions.</p>
-        </div>
-        <div class="feature">
-            <h2>Flashcards</h2>
-            <p>Memorize your answers with flashcards! Perfect for preparing for exams, quizzes, and homework.</p>
-        </div>
+    
+    <div class="mobile-nav">
+        <button class="close-nav">
+            <i class="fas fa-times"></i>
+        </button>
+        <ul class="mobile-nav-links">
+            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="feature.html"><i class="fas fa-list"></i> Features</a></li>
+        </ul>
     </div>
+    <div class="overlay"></div>
+
+    <main>
+        <div class="hero">
+            <span class="emoji">🌟</span>
+            <h2>Study Buddy Features</h2>
+            <p>Your all-in-one study companion that makes learning fun! Explore our tools designed to help you with various aspects of your academic journey.</p>
+        </div>
+
+        <div class="features">
+            <div class="feature-card" data-module="todo">
+                <span class="feature-icon"><i class="fas fa-tasks"></i></span>
+                <h3>To-Do List</h3>
+            </div>
+            <div class="feature-card" data-module="grade">
+                <span class="feature-icon"><i class="fas fa-chart-line"></i></span>
+                <h3>Grade Calculator</h3>
+            </div>
+            <div class="feature-card" data-module="sgpa">
+                <span class="feature-icon"><i class="fas fa-graduation-cap"></i></span>
+                <h3>SGPA Calculator</h3>
+            </div>
+            <div class="feature-card" data-module="physics">
+                <span class="feature-icon"><i class="fas fa-atom"></i></span>
+                <h3>Physics Solver</h3>
+            </div>
+            <div class="feature-card" data-module="converter">
+                <span class="feature-icon"><i class="fas fa-exchange-alt"></i></span>
+                <h3>Unit Converter</h3>
+            </div>
+            <div class="feature-card" data-module="flashcards">
+                <span class="feature-icon"><i class="fas fa-clone"></i></span>
+                <h3>Flashcards</h3>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="module active" id="module-welcome">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-hand-sparkles"></i></span>
+                    <h3>Welcome to Study Buddy!</h3>
+                </div>
+                <p>Select any feature from above to learn more about how it can help you in your academic journey.</p>
+                <div class="feature-details">
+                    <h4>Why Choose Study Buddy?</h4>
+                    <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                        <li>All-in-one platform for students</li>
+                        <li>Intuitive and user-friendly interface</li>
+                        <li>Works on all devices - mobile, tablet, and desktop</li>
+                        <li>Free to use with no hidden fees</li>
+                        <li>No account required - just open and start using</li>
+                    </ul>
+                    <p>Study Buddy was designed by students, for students. We understand the challenges of academic life and have created tools that make studying more efficient and enjoyable.</p>
+                </div>
+            </div>
+
+            <div class="module" id="module-todo">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-tasks"></i></span>
+                    <h3>To-Do List</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Organize your assignments, study sessions, and deadlines with our easy-to-use To-Do List.</p>
+                    <h4>Key Features:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Add, edit, and delete tasks</li>
+                        <li>Set due dates</li>
+                        <li>Mark tasks as complete</li>
+                        <li>Data saved locally - no account needed</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Click "Add Task" to create a new task</li>
+                            <li>Fill in task details and select a due date</li>
+                            <li>Use the checkboxes to mark tasks as complete</li>
+                            <li>Use the edit and delete buttons to manage your tasks</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" id="module-grade">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-chart-line"></i></span>
+                    <h3>Grade Calculator</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Calculate your current grade based on assignments, tests, and other assessments to track your progress.</p>
+                    <h4>Key Features:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Add multiple subjects with different marks(0-100)</li>
+                        <li>Calculate weighted averages automatically</li>
+                        <li>Calculate "what-if" scenarios for future grades</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Enter your subject names</li>
+                            <li>Add the marks percentage for each subject</li>
+                            <li>The calculator will automatically determine your current grade</li>
+                            <li>Add hypothetical future scores to see how they would affect your grade</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" id="module-sgpa">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-graduation-cap"></i></span>
+                    <h3>SGPA Calculator</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Calculate your Semester Grade Point Average (SGPA) to track your academic performance.</p>
+                    <h4>Key Features:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Add multiple courses with credits</li>
+                        <li>Calculate SGPA based on entered grades and credits</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Add number of courses</li>
+                            <li>Enter credits and grades</li>
+                            <li>Click "Calculate SGPA" to get your semester grade point average</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" id="module-physics">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-atom"></i></span>
+                    <h3>Physics Solver</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Quickly solve common physics problems with our formula-based calculator.</p>
+                    <h4>Supported Formulas:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>First equation of motion.</li>
+                        <li>Second equation of motion.</li>
+                        <li>Third equation of motion.</li>
+                        <li>Force</li>
+                        <li>Kinetic Energy</li>
+                        <li>Potential Energy</li>
+                        <li>OHM's Law</li>
+                        <li>Electical Power</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Select the physics topic from the dropdown menu</li>
+                            <li>Choose the specific formula you need</li>
+                            <li>Enter the known values in the provided fields</li>
+                            <li>Click "Calculate" to get your result</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" id="module-converter">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-exchange-alt"></i></span>
+                    <h3>Unit Converter</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Convert between different units of measurement for various physical quantities.</p>
+                    <h4>Conversion Categories:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Length (m, cm, km, in, ft, yd, mi)</li>
+                        <li>Mass (kg, g, mg, lb, oz, ton)</li>
+                        <li>Temperature (°C, °F, K)</li>
+                        <li>Time (s, min, hr, day, week, month, year)</li>
+                        <li>Volume (L, mL, m³, gal, qt, pt, cup)</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Select the category of conversion</li>
+                            <li>Choose the source unit and target unit</li>
+                            <li>Enter the value to convert</li>
+                            <li>Get instant conversion results</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module" id="module-flashcards">
+                <div class="module-title">
+                    <span class="feature-icon"><i class="fas fa-clone"></i></span>
+                    <h3>Flashcards</h3>
+                </div>
+                <div class="feature-details">
+                    <p>Create and study with digital flashcards to memorize key concepts and facts.</p>
+                    <h4>Key Features:</h4>
+                    <ul style="margin-left: 1.5rem;">
+                        <li>Create custom flashcard sets</li>
+                        <li>Flip cards to reveal answers</li>
+                        <li>Navigate through card sets</li>
+                    </ul>
+                    <div style="margin-top: 2rem;">
+                        <h4>How to Use:</h4>
+                        <ol style="margin-left: 1.5rem;">
+                            <li>Create a new flashcard</li>
+                            <li>Add questions on the front and answers on the back</li>
+                            <li>Click on cards to flip between question and answer</li>
+                            <li>Use previous/next buttons to navigate between cards</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="logo">
+            <i class="fas fa-book-reader"></i>
+            <h3>Study Buddy</h3>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="feature.html">Features</a>
+        </div>
+        <p class="copyright">© 2025 Study Buddy. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Mobile navigation toggle
+        const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+        const mobileNav = document.querySelector('.mobile-nav');
+        const closeNav = document.querySelector('.close-nav');
+        const overlay = document.querySelector('.overlay');
+
+        mobileNavToggle.addEventListener('click', () => {
+            mobileNav.classList.add('active');
+            overlay.classList.add('active');
+        });
+
+        closeNav.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        overlay.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        // Feature cards click event
+        const featureCards = document.querySelectorAll('.feature-card');
+        const modules = document.querySelectorAll('.module');
+
+        featureCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const moduleId = `module-${card.dataset.module}`;
+                
+                // Remove active class from all cards and modules
+                featureCards.forEach(c => c.classList.remove('active'));
+                modules.forEach(m => m.classList.remove('active'));
+                
+                // Add active class to clicked card and corresponding module
+                card.classList.add('active');
+                document.getElementById(moduleId).classList.add('active');
+                
+                // Add ripple effect
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                card.appendChild(ripple);
+                
+                const x = event.clientX - card.getBoundingClientRect().left;
+                const y = event.clientY - card.getBoundingClientRect().top;
+                
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+                
+                // Scroll to content area
+                document.querySelector('.content-area').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['var(--primary)', 'var(--secondary)', 'var(--accent1)', 'var(--accent2)', 'var(--accent3)'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
+                confetti.style.width = `${Math.random() * 10 + 5}px`;
+                confetti.style.height = `${Math.random() * 10 + 5}px`;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        // Trigger confetti on Get Started button click
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', createConfetti);
+        });
+    </script>
 </body>
 </html>

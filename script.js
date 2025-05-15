@@ -26,9 +26,10 @@ const getStartedBtn = document.getElementById('get-started-btn');
 
 // Show initial module when "Get Started" is clicked
 getStartedBtn.addEventListener('click', () => {
-    modules[0].classList.add('active');
-    featureCards[0].classList.add('active');
-    document.querySelector('.content-area').scrollIntoView({ behavior: 'smooth' });
+    document.querySelector('.initial-content-area').scrollIntoView({ behavior: 'smooth' });
+
+    // Create confetti effect
+    createConfetti();
 });
 
 featureCards.forEach(card => {
@@ -45,9 +46,6 @@ featureCards.forEach(card => {
         
         // Scroll to content area
         document.querySelector('.content-area').scrollIntoView({ behavior: 'smooth' });
-        
-        // Create confetti effect
-        createConfetti();
     });
 });
 
