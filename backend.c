@@ -10,6 +10,231 @@ void send_response_header(bool is_json) {
     printf("Content-Type: %s\r\n\r\n", is_json ? "application/json" : "text/plain");
 }
 
+// Parse form data from query string
+void parse_query_string(char* query, char* params[][2], int* num_params) {
+    *num_params = 0;
+    if (!query || strlen(query) == 0) {
+        return;
+    }
+    
+    // Make a copy of the query string since strtok modifies it
+    char* query_copy = strdup(query);
+    if (!query_copy) {
+        return; // Memory allocation failed
+    }
+    
+    char* token = strtok(query_copy, "&");
+    
+    while (token != NULL && *num_params < 10) {
+        char* equals = strchr(token, '=');
+        if (equals) {
+            *equals = '\0';
+            params[*num_params][0] = strdup(token);
+            params[*num_params][1] = strdup(equals + 1);
+            if (params[*num_params][0] && params[*num_params][1]) {
+                (*num_params)++;
+            }
+        }
+        token = strtok(NULL, "&");
+    }
+    
+    free(query_copy);
+}
+
+// Get parameter value by name
+const char* get_param(char* params[][2], int num_params, const char* name) {
+    for (int i = 0; i < num_params; i++) {
+        if (params[i][0] && strcmp(params[i][0], name) == 0) {
+            return params[i][1];
+        }
+    }
+    return NULL;
+}
+
+// Helper function to URL decode a string
+void url_decode(char* dst, const char* src) {
+    char a, b;
+    while (*src) {
+        if ((*src == '%') && ((a = src[1]) && (b = src[2])) && 
+            (isxdigit(a) && isxdigit(b))) {
+            if (a >= 'a')
+                a -= 'a'-'A';
+            if (a >= 'A')
+                a -= ('A' - 10);
+            else
+                a -= '0';
+            if (b >= 'a')
+                b -= 'a'-'A';
+            if (b >= 'A')
+                b -= ('A' - 10);
+            else
+                b -= '0';
+            *dst++ = 16*a+b;
+            src += 3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
+// Grade Calculator Functions
+
+// Get the letter grade from a percentage
+const char* get_letter_grade(double percentage) {
+    if (percentage >= 90) return "A";
+    else if (percentage >= 80) return "B";
+    else if (percentage >= 70) return "C";
+    else if (percentage >= 60) return "D";
+    else return "F";
+}
+
+// Handle grade calculation
+void handle_grade_calculation(char* query) {
+    char* params[20][2]; // Increased to handle multiple grades
+    int num_params = 0;
+    parse_query_string(query, params, &num_params);
+    
+    const char* grades_str = get_param(params, num_params, "grades");
+    
+    if (!grades_str) {
+        send_response_header(true);
+        printf("{\"error\": \"Missing grades parameter\"}");
+        return;
+    }
+    
+    // Parse the comma-separated list of grades
+    char* grades_copy = strdup(grades_str);
+    if (!grades_copy) {
+        send_response_header(true);
+        printf("{\"error\": \"Memory allocation failed\"}");
+        return;
+    }
+    
+    char* token = strtok(grades_copy, ",");
+    double total_grade = 0.0;
+    int valid_grades = 0;
+    
+    while (token != NULL) {
+        double grade = atof(token);
+        if (grade >= 0 && grade <= 100) {
+            total_grade += grade;
+            valid_grades++;
+        }
+        token = strtok(NULL, ",");
+    }
+    
+    free(grades_copy);
+    
+    if (valid_grades == 0) {
+        send_response_header(true);
+        printf("{\"error\": \"No valid grades provided (values must be between 0 and 100)\"}");
+        return;
+    }
+    
+    double percentage = total_grade / valid_grades;
+    const char* letter = get_letter_grade(percentage);
+    
+    send_response_header(true);
+    printf("{\"average\": %.2f, \"letter\": \"%s\"}", percentage, letter);
+}
+
+// SGPA Calculator Functions
+
+// Convert grade character to points based on the provided conversion table
+double convert_grade_to_points(const char* grade) {
+    if (strcmp(grade, "O") == 0) return 10.0;
+    else if (strcmp(grade, "A+") == 0) return 9.0;
+    else if (strcmp(grade, "A") == 0) return 8.0;
+    else if (strcmp(grade, "B+") == 0) return 7.0;
+    else if (strcmp(grade, "B") == 0) return 6.0;
+    else if (strcmp(grade, "C") == 0) return 5.0;
+    else if (strcmp(grade, "U") == 0) return 0.0;
+    else return -1.0; // Invalid grade
+}
+
+// Calculate SGPA based on credits and grades
+double calculate_sgpa(int num_subjects, double* credits, double* grade_points) {
+    double total_grade_points = 0.0;
+    double total_credits = 0.0;
+    
+    for (int i = 0; i < num_subjects; i++) {
+        total_grade_points += credits[i] * grade_points[i];
+        total_credits += credits[i];
+    }
+    
+    return (total_credits > 0) ? (total_grade_points / total_credits) : 0.0;
+}
+
+// Handle SGPA calculation
+void handle_sgpa_calculation(char* query) {
+    char* params[50][2]; // Increased to handle multiple subjects with longer param names
+    int num_params = 0;
+    parse_query_string(query, params, &num_params);
+    
+    const char* num_subjects_str = get_param(params, num_params, "num_subjects");
+    
+    if (!num_subjects_str) {
+        send_response_header(true);
+        printf("{\"error\": \"Missing number of subjects\"}");
+        return;
+    }
+    
+    int num_subjects = atoi(num_subjects_str);
+    
+    if (num_subjects <= 0 || num_subjects > 10) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid number of subjects (must be between 1 and 10)\"}");
+        return;
+    }
+    
+    double credits[10] = {0};
+    double grade_points[10] = {0};
+    bool valid_inputs = true;
+    
+    for (int i = 1; i <= num_subjects; i++) {
+        char credit_param[20];
+        char grade_param[20];
+        
+        // Match the parameter names from the frontend
+        sprintf(credit_param, "creditPoints_%d", i);
+        sprintf(grade_param, "gradeCharacter_%d", i);
+        
+        const char* credit_str = get_param(params, num_params, credit_param);
+        const char* grade_str = get_param(params, num_params, grade_param);
+        
+        if (!credit_str || !grade_str) {
+            valid_inputs = false;
+            break;
+        }
+        
+        double credit = atof(credit_str);
+        double grade_point = convert_grade_to_points(grade_str);
+        
+        if (credit <= 0 || grade_point < 0) {
+            valid_inputs = false;
+            break;
+        }
+        
+        credits[i-1] = credit;
+        grade_points[i-1] = grade_point;
+    }
+    
+    if (!valid_inputs) {
+        send_response_header(true);
+        printf("{\"error\": \"Invalid or missing credit points or grades\"}");
+        return;
+    }
+    
+    double sgpa = calculate_sgpa(num_subjects, credits, grade_points);
+    
+    send_response_header(true);
+    printf("{\"sgpa\": %.3f}", sgpa);
+}
+
 // Physics solver functions
 double velocity_formula(double u, double a, double t) {
     return u + a * t;
@@ -42,6 +267,119 @@ double ohms_law_formula(double i, double r) {
 
 double power_formula(double v, double i) {
     return v * i;
+}
+
+// Solve physics problem
+void handle_physics_solver(char* query) {
+    char* params[10][2];
+    int num_params = 0;
+    parse_query_string(query, params, &num_params);
+    
+    const char* formula = get_param(params, num_params, "formula");
+    
+    if (!formula) {
+        send_response_header(true);
+        printf("{\"error\": \"Missing formula parameter\"}");
+        return;
+    }
+    
+    double result = -1;
+    
+    if (strcmp(formula, "velocity") == 0) {
+        const char* u_str = get_param(params, num_params, "u");
+        const char* a_str = get_param(params, num_params, "a");
+        const char* t_str = get_param(params, num_params, "t");
+        
+        if (u_str && a_str && t_str) {
+            double u = atof(u_str);
+            double a = atof(a_str);
+            double t = atof(t_str);
+            result = velocity_formula(u, a, t);
+        }
+    } 
+    else if (strcmp(formula, "distance") == 0) {
+        const char* u_str = get_param(params, num_params, "u");
+        const char* a_str = get_param(params, num_params, "a");
+        const char* t_str = get_param(params, num_params, "t");
+        
+        if (u_str && a_str && t_str) {
+            double u = atof(u_str);
+            double a = atof(a_str);
+            double t = atof(t_str);
+            result = distance_formula(u, a, t);
+        }
+    }
+    else if (strcmp(formula, "velocity-squared") == 0) {
+        const char* u_str = get_param(params, num_params, "u");
+        const char* a_str = get_param(params, num_params, "a");
+        const char* s_str = get_param(params, num_params, "s");
+        
+        if (u_str && a_str && s_str) {
+            double u = atof(u_str);
+            double a = atof(a_str);
+            double s = atof(s_str);
+            result = velocity_squared_formula(u, a, s);
+        }
+    }
+    else if (strcmp(formula, "force") == 0) {
+        const char* m_str = get_param(params, num_params, "m");
+        const char* a_str = get_param(params, num_params, "a");
+        
+        if (m_str && a_str) {
+            double m = atof(m_str);
+            double a = atof(a_str);
+            result = force_formula(m, a);
+        }
+    }
+    else if (strcmp(formula, "kinetic-energy") == 0) {
+        const char* m_str = get_param(params, num_params, "m");
+        const char* v_str = get_param(params, num_params, "v");
+        
+        if (m_str && v_str) {
+            double m = atof(m_str);
+            double v = atof(v_str);
+            result = kinetic_energy_formula(m, v);
+        }
+    }
+    else if (strcmp(formula, "potential-energy") == 0) {
+        const char* m_str = get_param(params, num_params, "m");
+        const char* g_str = get_param(params, num_params, "g");
+        const char* h_str = get_param(params, num_params, "h");
+        
+        if (m_str && h_str) {
+            double m = atof(m_str);
+            double g = g_str ? atof(g_str) : 9.8; // Use default if not provided
+            double h = atof(h_str);
+            result = potential_energy_formula(m, g, h);
+        }
+    }
+    else if (strcmp(formula, "ohms-law") == 0) {
+        const char* i_str = get_param(params, num_params, "i");
+        const char* r_str = get_param(params, num_params, "r");
+        
+        if (i_str && r_str) {
+            double i = atof(i_str);
+            double r = atof(r_str);
+            result = ohms_law_formula(i, r);
+        }
+    }
+    else if (strcmp(formula, "power") == 0) {
+        const char* v_str = get_param(params, num_params, "v");
+        const char* i_str = get_param(params, num_params, "i");
+        
+        if (v_str && i_str) {
+            double v = atof(v_str);
+            double i = atof(i_str);
+            result = power_formula(v, i);
+        }
+    }
+    
+    send_response_header(true);
+    if (result != -1) {
+        printf("{\"result\": %.4f}", result);
+    } else {
+        printf("{\"error\": \"Invalid parameters or formula\"}");
+    }
 }
 
 // Unit conversion functions
@@ -159,344 +497,6 @@ double convert_volume(double value, const char* from, const char* to) {
     else if (strcmp(to, "cup") == 0) return ml / 236.588;
     
     return -1; // Error case
-}
-
-// Parse form data from query string
-void parse_query_string(char* query, char* params[][2], int* num_params) {
-    *num_params = 0;
-    if (!query || strlen(query) == 0) {
-        return;
-    }
-    
-    // Make a copy of the query string since strtok modifies it
-    char* query_copy = strdup(query);
-    if (!query_copy) {
-        return; // Memory allocation failed
-    }
-    
-    char* token = strtok(query_copy, "&");
-    
-    while (token != NULL && *num_params < 10) {
-        char* equals = strchr(token, '=');
-        if (equals) {
-            *equals = '\0';
-            params[*num_params][0] = strdup(token);
-            params[*num_params][1] = strdup(equals + 1);
-            if (params[*num_params][0] && params[*num_params][1]) {
-                (*num_params)++;
-            }
-        }
-        token = strtok(NULL, "&");
-    }
-    
-    free(query_copy);
-}
-
-// Get parameter value by name
-const char* get_param(char* params[][2], int num_params, const char* name) {
-    for (int i = 0; i < num_params; i++) {
-        if (params[i][0] && strcmp(params[i][0], name) == 0) {
-            return params[i][1];
-        }
-    }
-    return NULL;
-}
-
-// Helper function to URL decode a string
-void url_decode(char* dst, const char* src) {
-    char a, b;
-    while (*src) {
-        if ((*src == '%') && ((a = src[1]) && (b = src[2])) && 
-            (isxdigit(a) && isxdigit(b))) {
-            if (a >= 'a')
-                a -= 'a'-'A';
-            if (a >= 'A')
-                a -= ('A' - 10);
-            else
-                a -= '0';
-            if (b >= 'a')
-                b -= 'a'-'A';
-            if (b >= 'A')
-                b -= ('A' - 10);
-            else
-                b -= '0';
-            *dst++ = 16*a+b;
-            src += 3;
-        } else if (*src == '+') {
-            *dst++ = ' ';
-            src++;
-        } else {
-            *dst++ = *src++;
-        }
-    }
-    *dst = '\0';
-}
-
-// SGPA Calculator Functions
-
-// Convert grade character to points based on the provided conversion table
-double convert_grade_to_points(const char* grade) {
-    if (strcmp(grade, "O") == 0) return 10.0;
-    else if (strcmp(grade, "A+") == 0) return 9.0;
-    else if (strcmp(grade, "A") == 0) return 8.0;
-    else if (strcmp(grade, "B+") == 0) return 7.0;
-    else if (strcmp(grade, "B") == 0) return 6.0;
-    else if (strcmp(grade, "C") == 0) return 5.0;
-    else if (strcmp(grade, "U") == 0) return 0.0;
-    else return -1.0; // Invalid grade
-}
-
-// Calculate SGPA based on credits and grades
-double calculate_sgpa(int num_subjects, double* credits, double* grade_points) {
-    double total_grade_points = 0.0;
-    double total_credits = 0.0;
-    
-    for (int i = 0; i < num_subjects; i++) {
-        total_grade_points += credits[i] * grade_points[i];
-        total_credits += credits[i];
-    }
-    
-    return (total_credits > 0) ? (total_grade_points / total_credits) : 0.0;
-}
-
-// Handle SGPA calculation
-void handle_sgpa_calculation(char* query) {
-    char* params[50][2]; // Increased to handle multiple subjects with longer param names
-    int num_params = 0;
-    parse_query_string(query, params, &num_params);
-    
-    const char* num_subjects_str = get_param(params, num_params, "num_subjects");
-    
-    if (!num_subjects_str) {
-        send_response_header(true);
-        printf("{\"error\": \"Missing number of subjects\"}");
-        return;
-    }
-    
-    int num_subjects = atoi(num_subjects_str);
-    
-    if (num_subjects <= 0 || num_subjects > 10) {
-        send_response_header(true);
-        printf("{\"error\": \"Invalid number of subjects (must be between 1 and 10)\"}");
-        return;
-    }
-    
-    double credits[10] = {0};
-    double grade_points[10] = {0};
-    bool valid_inputs = true;
-    
-    for (int i = 1; i <= num_subjects; i++) {
-        char credit_param[20];
-        char grade_param[20];
-        
-        // Match the parameter names from the frontend
-        sprintf(credit_param, "creditPoints_%d", i);
-        sprintf(grade_param, "gradeCharacter_%d", i);
-        
-        const char* credit_str = get_param(params, num_params, credit_param);
-        const char* grade_str = get_param(params, num_params, grade_param);
-        
-        if (!credit_str || !grade_str) {
-            valid_inputs = false;
-            break;
-        }
-        
-        double credit = atof(credit_str);
-        double grade_point = convert_grade_to_points(grade_str);
-        
-        if (credit <= 0 || grade_point < 0) {
-            valid_inputs = false;
-            break;
-        }
-        
-        credits[i-1] = credit;
-        grade_points[i-1] = grade_point;
-    }
-    
-    if (!valid_inputs) {
-        send_response_header(true);
-        printf("{\"error\": \"Invalid or missing credit points or grades\"}");
-        return;
-    }
-    
-    double sgpa = calculate_sgpa(num_subjects, credits, grade_points);
-    
-    send_response_header(true);
-    printf("{\"sgpa\": %.3f}", sgpa);
-}
-
-// Grade Calculator Functions
-
-// Get the letter grade from a percentage
-const char* get_letter_grade(double percentage) {
-    if (percentage >= 90) return "A";
-    else if (percentage >= 80) return "B";
-    else if (percentage >= 70) return "C";
-    else if (percentage >= 60) return "D";
-    else return "F";
-}
-
-// Handle grade calculation
-void handle_grade_calculation(char* query) {
-    char* params[20][2]; // Increased to handle multiple grades
-    int num_params = 0;
-    parse_query_string(query, params, &num_params);
-    
-    const char* grades_str = get_param(params, num_params, "grades");
-    
-    if (!grades_str) {
-        send_response_header(true);
-        printf("{\"error\": \"Missing grades parameter\"}");
-        return;
-    }
-    
-    // Parse the comma-separated list of grades
-    char* grades_copy = strdup(grades_str);
-    if (!grades_copy) {
-        send_response_header(true);
-        printf("{\"error\": \"Memory allocation failed\"}");
-        return;
-    }
-    
-    char* token = strtok(grades_copy, ",");
-    double total_grade = 0.0;
-    int valid_grades = 0;
-    
-    while (token != NULL) {
-        double grade = atof(token);
-        if (grade >= 0 && grade <= 100) {
-            total_grade += grade;
-            valid_grades++;
-        }
-        token = strtok(NULL, ",");
-    }
-    
-    free(grades_copy);
-    
-    if (valid_grades == 0) {
-        send_response_header(true);
-        printf("{\"error\": \"No valid grades provided (values must be between 0 and 100)\"}");
-        return;
-    }
-    
-    double percentage = total_grade / valid_grades;
-    const char* letter = get_letter_grade(percentage);
-    
-    send_response_header(true);
-    printf("{\"average\": %.2f, \"letter\": \"%s\"}", percentage, letter);
-}
-
-// Solve physics problem
-void handle_physics_solver(char* query) {
-    char* params[10][2];
-    int num_params = 0;
-    parse_query_string(query, params, &num_params);
-    
-    const char* formula = get_param(params, num_params, "formula");
-    
-    if (!formula) {
-        send_response_header(true);
-        printf("{\"error\": \"Missing formula parameter\"}");
-        return;
-    }
-    
-    double result = -1;
-    
-    if (strcmp(formula, "velocity") == 0) {
-        const char* u_str = get_param(params, num_params, "u");
-        const char* a_str = get_param(params, num_params, "a");
-        const char* t_str = get_param(params, num_params, "t");
-        
-        if (u_str && a_str && t_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double t = atof(t_str);
-            result = velocity_formula(u, a, t);
-        }
-    } 
-    else if (strcmp(formula, "distance") == 0) {
-        const char* u_str = get_param(params, num_params, "u");
-        const char* a_str = get_param(params, num_params, "a");
-        const char* t_str = get_param(params, num_params, "t");
-        
-        if (u_str && a_str && t_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double t = atof(t_str);
-            result = distance_formula(u, a, t);
-        }
-    }
-    else if (strcmp(formula, "velocity-squared") == 0) {
-        const char* u_str = get_param(params, num_params, "u");
-        const char* a_str = get_param(params, num_params, "a");
-        const char* s_str = get_param(params, num_params, "s");
-        
-        if (u_str && a_str && s_str) {
-            double u = atof(u_str);
-            double a = atof(a_str);
-            double s = atof(s_str);
-            result = velocity_squared_formula(u, a, s);
-        }
-    }
-    else if (strcmp(formula, "force") == 0) {
-        const char* m_str = get_param(params, num_params, "m");
-        const char* a_str = get_param(params, num_params, "a");
-        
-        if (m_str && a_str) {
-            double m = atof(m_str);
-            double a = atof(a_str);
-            result = force_formula(m, a);
-        }
-    }
-    else if (strcmp(formula, "kinetic-energy") == 0) {
-        const char* m_str = get_param(params, num_params, "m");
-        const char* v_str = get_param(params, num_params, "v");
-        
-        if (m_str && v_str) {
-            double m = atof(m_str);
-            double v = atof(v_str);
-            result = kinetic_energy_formula(m, v);
-        }
-    }
-    else if (strcmp(formula, "potential-energy") == 0) {
-        const char* m_str = get_param(params, num_params, "m");
-        const char* g_str = get_param(params, num_params, "g");
-        const char* h_str = get_param(params, num_params, "h");
-        
-        if (m_str && h_str) {
-            double m = atof(m_str);
-            double g = g_str ? atof(g_str) : 9.8; // Use default if not provided
-            double h = atof(h_str);
-            result = potential_energy_formula(m, g, h);
-        }
-    }
-    else if (strcmp(formula, "ohms-law") == 0) {
-        const char* i_str = get_param(params, num_params, "i");
-        const char* r_str = get_param(params, num_params, "r");
-        
-        if (i_str && r_str) {
-            double i = atof(i_str);
-            double r = atof(r_str);
-            result = ohms_law_formula(i, r);
-        }
-    }
-    else if (strcmp(formula, "power") == 0) {
-        const char* v_str = get_param(params, num_params, "v");
-        const char* i_str = get_param(params, num_params, "i");
-        
-        if (v_str && i_str) {
-            double v = atof(v_str);
-            double i = atof(i_str);
-            result = power_formula(v, i);
-        }
-    }
-    
-    send_response_header(true);
-    if (result != -1) {
-        printf("{\"result\": %.4f}", result);
-    } else {
-        printf("{\"error\": \"Invalid parameters or formula\"}");
-    }
 }
 
 // Handle unit conversion
