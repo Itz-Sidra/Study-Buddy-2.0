@@ -4,7 +4,6 @@ import socketserver
 import json
 import os
 import subprocess
-import cgi
 import tempfile
 import urllib.parse
 import sqlite3
@@ -196,51 +195,138 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
         response = {'success': True}
         self.wfile.write(json.dumps(response).encode())
     
-    # Flashcard handlers
-    def handle_flashcards_get(self):
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, front, back FROM flashcards')
-        flashcards = []
-        for row in cursor.fetchall():
-            flashcards.append({
-                'id': row[0],
-                'front': row[1],
-                'back': row[2]
-            })
-        conn.close()
-        
-        self._set_headers()
-        self.wfile.write(json.dumps(flashcards).encode())
+    # Grade Calculator handler
+    def handle_grade_calculation(self, query_string):
+        try:
+            # Call the C backend with the query string
+            env = os.environ.copy()
+            env["QUERY_STRING"] = query_string
+            env["REQUEST_METHOD"] = self.command  # Use the actual request method
+            env["PATH_INFO"] = "/calculate-grade"
+            
+            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-grade, QUERY_STRING={query_string}")
+            
+            result = subprocess.run(
+                [BACKEND_EXECUTABLE],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Debug output if needed
+            if result.returncode != 0:
+                print(f"DEBUG: Backend exited with code {result.returncode}")
+                print(f"DEBUG: Backend stderr: {result.stderr}")
+            
+            # Process output
+            output = result.stdout.strip()
+            
+            # Find the actual JSON content after the headers
+            json_content = None
+            if '\r\n\r\n' in output:
+                # Split at the double newline that separates headers from body
+                headers, body = output.split('\r\n\r\n', 1)
+                json_content = body
+            else:
+                # If there's no header separator, check if it's just JSON
+                try:
+                    json.loads(output)
+                    json_content = output
+                except:
+                    # If parsing fails, look for the first { character
+                    start_idx = output.find('{')
+                    if start_idx >= 0:
+                        json_content = output[start_idx:]
+            
+            if json_content:
+                try:
+                    json_output = json.loads(json_content)
+                    self._set_headers()
+                    self.wfile.write(json.dumps(json_output).encode())
+                except json.JSONDecodeError as je:
+                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
+                    self._set_headers()
+                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
+                    self.wfile.write(json.dumps(response).encode())
+            else:
+                print(f"DEBUG: No JSON content found in: {output[:100]}")
+                self._set_headers()
+                response = {'error': 'Backend response contained no valid JSON data'}
+                self.wfile.write(json.dumps(response).encode())
+                
+        except Exception as e:
+            print(f"DEBUG: Exception: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Backend execution failed: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
     
-    def handle_flashcards_post(self, post_data):
-        flashcard_data = json.loads(post_data)
-        
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO flashcards (front, back) VALUES (?, ?)',
-            (flashcard_data.get('front', ''), flashcard_data.get('back', ''))
-        )
-        flashcard_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        self._set_headers()
-        response = {'id': flashcard_id, 'success': True}
-        self.wfile.write(json.dumps(response).encode())
-    
-    def handle_flashcard_delete(self, flashcard_id):
-        conn = sqlite3.connect(DATABASE_FILE)
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM flashcards WHERE id = ?', (flashcard_id,))
-        conn.commit()
-        conn.close()
-        
-        self._set_headers()
-        response = {'success': True}
-        self.wfile.write(json.dumps(response).encode())
-    
+    # SGPA Calculator handler
+    def handle_sgpa_calculation(self, query_string):
+        try:
+            # Call the C backend with the query string
+            env = os.environ.copy()
+            env["QUERY_STRING"] = query_string
+            env["REQUEST_METHOD"] = self.command  # Use the actual request method
+            env["PATH_INFO"] = "/calculate-sgpa"
+            
+            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-sgpa, QUERY_STRING={query_string}")
+            
+            result = subprocess.run(
+                [BACKEND_EXECUTABLE],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            
+            # Debug output if needed
+            if result.returncode != 0:
+                print(f"DEBUG: Backend exited with code {result.returncode}")
+                print(f"DEBUG: Backend stderr: {result.stderr}")
+            
+            # Process output
+            output = result.stdout.strip()
+            
+            # Find the actual JSON content after the headers
+            json_content = None
+            if '\r\n\r\n' in output:
+                # Split at the double newline that separates headers from body
+                headers, body = output.split('\r\n\r\n', 1)
+                json_content = body
+            else:
+                # If there's no header separator, check if it's just JSON
+                try:
+                    json.loads(output)
+                    json_content = output
+                except:
+                    # If parsing fails, look for the first { character
+                    start_idx = output.find('{')
+                    if start_idx >= 0:
+                        json_content = output[start_idx:]
+            
+            if json_content:
+                try:
+                    json_output = json.loads(json_content)
+                    self._set_headers()
+                    self.wfile.write(json.dumps(json_output).encode())
+                except json.JSONDecodeError as je:
+                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
+                    self._set_headers()
+                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
+                    self.wfile.write(json.dumps(response).encode())
+            else:
+                print(f"DEBUG: No JSON content found in: {output[:100]}")
+                self._set_headers()
+                response = {'error': 'Backend response contained no valid JSON data'}
+                self.wfile.write(json.dumps(response).encode())
+                
+        except Exception as e:
+            print(f"DEBUG: Exception: {str(e)}")
+            self._set_headers()
+            response = {'error': f'Backend execution failed: {str(e)}'}
+            self.wfile.write(json.dumps(response).encode())
+
     # Physics solver handler
     def handle_physics(self, query_string):
         try:
@@ -372,138 +458,51 @@ class StudyBuddyHandler(http.server.SimpleHTTPRequestHandler):
             self._set_headers()
             response = {'error': f'Backend execution failed: {str(e)}'}
             self.wfile.write(json.dumps(response).encode())
+
+    # Flashcard handlers
+    def handle_flashcards_get(self):
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, front, back FROM flashcards')
+        flashcards = []
+        for row in cursor.fetchall():
+            flashcards.append({
+                'id': row[0],
+                'front': row[1],
+                'back': row[2]
+            })
+        conn.close()
+        
+        self._set_headers()
+        self.wfile.write(json.dumps(flashcards).encode())
     
-    # Grade Calculator handler - NEW
-    def handle_grade_calculation(self, query_string):
-        try:
-            # Call the C backend with the query string
-            env = os.environ.copy()
-            env["QUERY_STRING"] = query_string
-            env["REQUEST_METHOD"] = self.command  # Use the actual request method
-            env["PATH_INFO"] = "/calculate-grade"
-            
-            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-grade, QUERY_STRING={query_string}")
-            
-            result = subprocess.run(
-                [BACKEND_EXECUTABLE],
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            
-            # Debug output if needed
-            if result.returncode != 0:
-                print(f"DEBUG: Backend exited with code {result.returncode}")
-                print(f"DEBUG: Backend stderr: {result.stderr}")
-            
-            # Process output
-            output = result.stdout.strip()
-            
-            # Find the actual JSON content after the headers
-            json_content = None
-            if '\r\n\r\n' in output:
-                # Split at the double newline that separates headers from body
-                headers, body = output.split('\r\n\r\n', 1)
-                json_content = body
-            else:
-                # If there's no header separator, check if it's just JSON
-                try:
-                    json.loads(output)
-                    json_content = output
-                except:
-                    # If parsing fails, look for the first { character
-                    start_idx = output.find('{')
-                    if start_idx >= 0:
-                        json_content = output[start_idx:]
-            
-            if json_content:
-                try:
-                    json_output = json.loads(json_content)
-                    self._set_headers()
-                    self.wfile.write(json.dumps(json_output).encode())
-                except json.JSONDecodeError as je:
-                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
-                    self._set_headers()
-                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
-                    self.wfile.write(json.dumps(response).encode())
-            else:
-                print(f"DEBUG: No JSON content found in: {output[:100]}")
-                self._set_headers()
-                response = {'error': 'Backend response contained no valid JSON data'}
-                self.wfile.write(json.dumps(response).encode())
-                
-        except Exception as e:
-            print(f"DEBUG: Exception: {str(e)}")
-            self._set_headers()
-            response = {'error': f'Backend execution failed: {str(e)}'}
-            self.wfile.write(json.dumps(response).encode())
+    def handle_flashcards_post(self, post_data):
+        flashcard_data = json.loads(post_data)
+        
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO flashcards (front, back) VALUES (?, ?)',
+            (flashcard_data.get('front', ''), flashcard_data.get('back', ''))
+        )
+        flashcard_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        self._set_headers()
+        response = {'id': flashcard_id, 'success': True}
+        self.wfile.write(json.dumps(response).encode())
     
-    # SGPA Calculator handler - NEW
-    def handle_sgpa_calculation(self, query_string):
-        try:
-            # Call the C backend with the query string
-            env = os.environ.copy()
-            env["QUERY_STRING"] = query_string
-            env["REQUEST_METHOD"] = self.command  # Use the actual request method
-            env["PATH_INFO"] = "/calculate-sgpa"
-            
-            print(f"DEBUG: Calling backend with PATH_INFO=/calculate-sgpa, QUERY_STRING={query_string}")
-            
-            result = subprocess.run(
-                [BACKEND_EXECUTABLE],
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            
-            # Debug output if needed
-            if result.returncode != 0:
-                print(f"DEBUG: Backend exited with code {result.returncode}")
-                print(f"DEBUG: Backend stderr: {result.stderr}")
-            
-            # Process output
-            output = result.stdout.strip()
-            
-            # Find the actual JSON content after the headers
-            json_content = None
-            if '\r\n\r\n' in output:
-                # Split at the double newline that separates headers from body
-                headers, body = output.split('\r\n\r\n', 1)
-                json_content = body
-            else:
-                # If there's no header separator, check if it's just JSON
-                try:
-                    json.loads(output)
-                    json_content = output
-                except:
-                    # If parsing fails, look for the first { character
-                    start_idx = output.find('{')
-                    if start_idx >= 0:
-                        json_content = output[start_idx:]
-            
-            if json_content:
-                try:
-                    json_output = json.loads(json_content)
-                    self._set_headers()
-                    self.wfile.write(json.dumps(json_output).encode())
-                except json.JSONDecodeError as je:
-                    print(f"DEBUG: JSON decode error: {je}, Content: {json_content[:100]}")
-                    self._set_headers()
-                    response = {'error': f'Backend returned malformed JSON. Content appears to be: {json_content[:100]}'}
-                    self.wfile.write(json.dumps(response).encode())
-            else:
-                print(f"DEBUG: No JSON content found in: {output[:100]}")
-                self._set_headers()
-                response = {'error': 'Backend response contained no valid JSON data'}
-                self.wfile.write(json.dumps(response).encode())
-                
-        except Exception as e:
-            print(f"DEBUG: Exception: {str(e)}")
-            self._set_headers()
-            response = {'error': f'Backend execution failed: {str(e)}'}
-            self.wfile.write(json.dumps(response).encode())
+    def handle_flashcard_delete(self, flashcard_id):
+        conn = sqlite3.connect(DATABASE_FILE)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM flashcards WHERE id = ?', (flashcard_id,))
+        conn.commit()
+        conn.close()
+        
+        self._set_headers()
+        response = {'success': True}
+        self.wfile.write(json.dumps(response).encode())
 
 def main():
     # Initialize database
