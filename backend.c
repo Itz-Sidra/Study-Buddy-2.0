@@ -81,6 +81,308 @@ void url_decode(char* dst, const char* src) {
     *dst = '\0';
 }
 
+// Todo List Functionality
+#define MAX_TASKS 100
+#define MAX_TITLE_LENGTH 100
+
+typedef struct {
+    int id;
+    char title[MAX_TITLE_LENGTH];
+    char date[20]; // YYYY-MM-DD format
+    bool completed;
+} Task;
+
+// In-memory storage for tasks (in a real application, this would be in a database)
+Task tasks[MAX_TASKS];
+int next_task_id = 1;
+int task_count = 0;
+
+// Function to add a new task
+void add_task(const char* title, const char* date, bool completed) {
+    if (task_count < MAX_TASKS) {
+        Task new_task;
+        new_task.id = next_task_id++;
+        
+        // Copy title with length limit to prevent buffer overflow
+        strncpy(new_task.title, title, MAX_TITLE_LENGTH - 1);
+        new_task.title[MAX_TITLE_LENGTH - 1] = '\0'; // Ensure null termination
+        
+        // Copy date if provided
+        if (date && strlen(date) > 0) {
+            strncpy(new_task.date, date, sizeof(new_task.date) - 1);
+            new_task.date[sizeof(new_task.date) - 1] = '\0'; // Ensure null termination
+        } else {
+            new_task.date[0] = '\0'; // Empty string
+        }
+        
+        new_task.completed = completed;
+        
+        tasks[task_count++] = new_task;
+    }
+}
+
+// Function to get a task by ID
+Task* get_task_by_id(int id) {
+    for (int i = 0; i < task_count; i++) {
+        if (tasks[i].id == id) {
+            return &tasks[i];
+        }
+    }
+    return NULL;
+}
+
+// Function to update a task
+bool update_task(int id, const char* title, const char* date, bool completed) {
+    Task* task = get_task_by_id(id);
+    
+    if (task) {
+        if (title) {
+            strncpy(task->title, title, MAX_TITLE_LENGTH - 1);
+            task->title[MAX_TITLE_LENGTH - 1] = '\0';
+        }
+        
+        if (date) {
+            strncpy(task->date, date, sizeof(task->date) - 1);
+            task->date[sizeof(task->date) - 1] = '\0';
+        }
+        
+        task->completed = completed;
+        return true;
+    }
+    
+    return false;
+}
+
+// Function to delete a task
+bool delete_task(int id) {
+    for (int i = 0; i < task_count; i++) {
+        if (tasks[i].id == id) {
+            // Move all tasks after this one forward
+            for (int j = i; j < task_count - 1; j++) {
+                tasks[j] = tasks[j + 1];
+            }
+            task_count--;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Handle getting all tasks
+void handle_get_tasks() {
+    send_response_header(true);
+    
+    printf("[");
+    for (int i = 0; i < task_count; i++) {
+        printf("{\"id\": %d, \"title\": \"%s\", \"date\": \"%s\", \"completed\": %s}",
+               tasks[i].id,
+               tasks[i].title,
+               tasks[i].date,
+               tasks[i].completed ? "true" : "false");
+        
+        if (i < task_count - 1) {
+            printf(",");
+        }
+    }
+    printf("]");
+}
+
+// Handle creating a new task
+void handle_create_task(char* post_data) {
+    char* params[10][2];
+    int num_params = 0;
+    
+    // Parse JSON body
+    parse_json_body(post_data, params, &num_params);
+    
+    const char* title = get_param(params, num_params, "title");
+    const char* date = get_param(params, num_params, "date");
+    const char* completed_str = get_param(params, num_params, "completed");
+    
+    if (!title || strlen(title) == 0) {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Title is required\"}");
+        return;
+    }
+    
+    bool completed = completed_str && strcmp(completed_str, "true") == 0;
+    
+    // Decode URL encoded data
+    char decoded_title[MAX_TITLE_LENGTH];
+    url_decode(decoded_title, title);
+    
+    add_task(decoded_title, date, completed);
+    
+    send_response_header(true);
+    printf("{\"success\": true, \"id\": %d}", next_task_id - 1);
+    
+    // Free allocated memory for parameters
+    for (int i = 0; i < num_params; i++) {
+        free(params[i][0]);
+        free(params[i][1]);
+    }
+}
+
+// Handle updating a task
+void handle_update_task(char* path_info, char* post_data) {
+    // Extract task ID from path
+    int task_id = 0;
+    sscanf(path_info, "/tasks/%d", &task_id);
+    
+    if (task_id <= 0) {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Invalid task ID\"}");
+        return;
+    }
+    
+    char* params[10][2];
+    int num_params = 0;
+    
+    // Parse JSON body
+    parse_json_body(post_data, params, &num_params);
+    
+    const char* title = get_param(params, num_params, "title");
+    const char* date = get_param(params, num_params, "date");
+    const char* completed_str = get_param(params, num_params, "completed");
+    
+    bool completed = completed_str && strcmp(completed_str, "true") == 0;
+    
+    char decoded_title[MAX_TITLE_LENGTH];
+    if (title) {
+        url_decode(decoded_title, title);
+    }
+    
+    bool success = update_task(task_id, title ? decoded_title : NULL, date, completed);
+    
+    send_response_header(true);
+    if (success) {
+        printf("{\"success\": true}");
+    } else {
+        printf("{\"success\": false, \"error\": \"Task not found\"}");
+    }
+    
+    // Free allocated memory for parameters
+    for (int i = 0; i < num_params; i++) {
+        free(params[i][0]);
+        free(params[i][1]);
+    }
+}
+
+// Handle deleting a task
+void handle_delete_task(char* path_info) {
+    // Extract task ID from path
+    int task_id = 0;
+    sscanf(path_info, "/tasks/%d", &task_id);
+    
+    if (task_id <= 0) {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Invalid task ID\"}");
+        return;
+    }
+    
+    bool success = delete_task(task_id);
+    
+    send_response_header(true);
+    if (success) {
+        printf("{\"success\": true}");
+    } else {
+        printf("{\"success\": false, \"error\": \"Task not found\"}");
+    }
+}
+
+// Main handler for todo list API
+void handle_tasks(char* request_method, char* path_info, char* query_string, char* post_data) {
+    // GET all tasks
+    if (strcmp(request_method, "GET") == 0 && (strcmp(path_info, "/tasks") == 0)) {
+        handle_get_tasks();
+    }
+    // POST - create new task
+    else if (strcmp(request_method, "POST") == 0 && (strcmp(path_info, "/tasks") == 0)) {
+        handle_create_task(post_data);
+    }
+    // PUT - update task
+    else if (strcmp(request_method, "PUT") == 0 && strncmp(path_info, "/tasks/", 7) == 0) {
+        handle_update_task(path_info, post_data);
+    }
+    // DELETE - delete task
+    else if (strcmp(request_method, "DELETE") == 0 && strncmp(path_info, "/tasks/", 7) == 0) {
+        handle_delete_task(path_info);
+    }
+    else {
+        send_response_header(true);
+        printf("{\"success\": false, \"error\": \"Invalid tasks endpoint or method\"}");
+    }
+}
+
+// Parse JSON from POST data
+void parse_json_body(char* post_data, char* params[][2], int* num_params) {
+    *num_params = 0;
+    if (!post_data || strlen(post_data) == 0) {
+        return;
+    }
+    
+    // Very simple JSON parser - assumes one level of nesting
+    // A proper implementation would use a JSON library
+    char* key_start = NULL;
+    char* value_start = NULL;
+    bool in_string = false;
+    bool in_key = false;
+    bool in_value = false;
+    char current_key[128] = {0};
+    char current_value[512] = {0};
+    
+    for (char* p = post_data; *p; p++) {
+        if (*p == '"') {
+            if (!in_string) {
+                in_string = true;
+                if (!in_key && !in_value) {
+                    in_key = true;
+                    key_start = p + 1;
+                } else if (!in_value && in_key) {
+                    // Finished parsing key
+                    in_key = false;
+                } else if (!in_value) {
+                    in_value = true;
+                    value_start = p + 1;
+                } else {
+                    // Finished parsing value
+                    in_value = false;
+                    in_string = false;
+                    
+                    // Store the key-value pair
+                    if (*num_params < 10) {
+                        params[*num_params][0] = strdup(current_key);
+                        params[*num_params][1] = strdup(current_value);
+                        if (params[*num_params][0] && params[*num_params][1]) {
+                            (*num_params)++;
+                        }
+                        
+                        // Reset for next pair
+                        memset(current_key, 0, sizeof(current_key));
+                        memset(current_value, 0, sizeof(current_value));
+                    }
+                }
+            } else {
+                in_string = false;
+            }
+        } else if (in_string) {
+            if (in_key && key_start) {
+                size_t len = p - key_start;
+                if (len < sizeof(current_key) - 1) {
+                    strncpy(current_key, key_start, len);
+                    current_key[len] = '\0';
+                }
+            } else if (in_value && value_start) {
+                size_t len = p - value_start;
+                if (len < sizeof(current_value) - 1) {
+                    strncpy(current_value, value_start, len);
+                    current_value[len] = '\0';
+                }
+            }
+        }
+    }
+}
+
 // Grade Calculator Functions
 
 // Get the letter grade from a percentage
@@ -573,19 +875,26 @@ int main(void) {
         else if (strcmp(path_info, "/calculate-grade") == 0) {
             handle_grade_calculation(query_string ? query_string : "");
         }
+        else if (strcmp(path_info, "/tasks") == 0 || strncmp(path_info, "/tasks/", 7) == 0) {
+            handle_tasks(request_method, path_info, query_string, NULL);
+        }
         else {
             send_response_header(true);
             printf("{\"error\": \"Unknown endpoint: %s\"}", path_info);
         }
     }
     // Process POST requests
-    else if (strcmp(request_method, "POST") == 0) {
+    else if (strcmp(request_method, "POST") == 0 || 
+             strcmp(request_method, "PUT") == 0 || 
+             strcmp(request_method, "DELETE") == 0) {
         // Get content length
         char* content_length_str = getenv("CONTENT_LENGTH");
         int content_length = content_length_str ? atoi(content_length_str) : 0;
         
+        char* post_data = NULL;
+        
         if (content_length > 0) {
-            char* post_data = malloc(content_length + 1);
+            post_data = malloc(content_length + 1);
             if (!post_data) {
                 send_response_header(true);
                 printf("{\"error\": \"Memory allocation failed\"}");
@@ -603,43 +912,30 @@ int main(void) {
             }
             
             post_data[content_length] = '\0';
-            
-            if (strcmp(path_info, "/physics") == 0) {
-                handle_physics_solver(post_data);
-            }
-            else if (strcmp(path_info, "/convert") == 0) {
-                handle_unit_conversion(post_data);
-            }
-            else if (strcmp(path_info, "/calculate-sgpa") == 0) {
-                handle_sgpa_calculation(post_data);
-            }
-            else if (strcmp(path_info, "/calculate-grade") == 0) {
-                handle_grade_calculation(post_data);
-            }
-            else {
-                send_response_header(true);
-                printf("{\"error\": \"Unknown endpoint for POST: %s\"}", path_info);
-            }
-            
+        }
+        
+        if (strcmp(path_info, "/physics") == 0) {
+            handle_physics_solver(post_data ? post_data : "");
+        }
+        else if (strcmp(path_info, "/convert") == 0) {
+            handle_unit_conversion(post_data ? post_data : "");
+        }
+        else if (strcmp(path_info, "/calculate-sgpa") == 0) {
+            handle_sgpa_calculation(post_data ? post_data : "");
+        }
+        else if (strcmp(path_info, "/calculate-grade") == 0) {
+            handle_grade_calculation(post_data ? post_data : "");
+        }
+        else if (strcmp(path_info, "/tasks") == 0 || strncmp(path_info, "/tasks/", 7) == 0) {
+            handle_tasks(request_method, path_info, query_string, post_data);
+        }
+        else {
+            send_response_header(true);
+            printf("{\"error\": \"Unknown endpoint for %s: %s\"}", request_method, path_info);
+        }
+        
+        if (post_data) {
             free(post_data);
-        } else {
-            // Even if there's no POST data, attempt to handle the request
-            if (strcmp(path_info, "/physics") == 0) {
-                handle_physics_solver("");
-            }
-            else if (strcmp(path_info, "/convert") == 0) {
-                handle_unit_conversion("");
-            }
-            else if (strcmp(path_info, "/calculate-sgpa") == 0) {
-                handle_sgpa_calculation("");
-            }
-            else if (strcmp(path_info, "/calculate-grade") == 0) {
-                handle_grade_calculation("");
-            }
-            else {
-                send_response_header(true);
-                printf("{\"error\": \"Unknown endpoint for empty POST: %s\"}", path_info);
-            }
         }
     }
     else {

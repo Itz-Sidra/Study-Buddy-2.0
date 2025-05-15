@@ -155,70 +155,74 @@ function renderTasks() {
         // Event listeners for task actions
         const checkbox = li.querySelector('.task-check');
         checkbox.addEventListener('change', () => {
-            const updatedTask = { ...task, completed: checkbox.checked };
-            
-            fetch(`/api/tasks/${task.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedTask),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    task.completed = checkbox.checked;
-                    if (checkbox.checked) {
-                        li.classList.add('completed');
-                    } else {
-                        li.classList.remove('completed');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error updating task:', error);
-                checkbox.checked = !checkbox.checked; // Revert the checkbox state if there's an error
-            });
+            updateTaskStatus(task, checkbox, li);
         });
         
         const deleteBtn = li.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', () => {
-            fetch(`/api/tasks/${task.id}`, {
-                method: 'DELETE',
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadTasks(); // Reload tasks from server
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting task:', error);
-            });
+            deleteTask(task.id);
         });
         
         const editBtn = li.querySelector('.edit-btn');
         editBtn.addEventListener('click', () => {
-            taskTitleInput.value = task.title;
-            taskDateInput.value = task.date ? task.date : '';
-            
-            // Delete the task and let the user create a new one with the edited values
-            fetch(`/api/tasks/${task.id}`, {
-                method: 'DELETE',
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadTasks(); // Reload tasks from server
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting task for edit:', error);
-            });
+            prepareTaskForEditing(task);
         });
         
         taskList.appendChild(li);
     });
+}
+
+// Update task completion status
+function updateTaskStatus(task, checkbox, li) {
+    const updatedTask = { ...task, completed: checkbox.checked };
+    
+    fetch(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTask),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            task.completed = checkbox.checked;
+            if (checkbox.checked) {
+                li.classList.add('completed');
+            } else {
+                li.classList.remove('completed');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error updating task:', error);
+        checkbox.checked = !checkbox.checked; // Revert the checkbox state if there's an error
+    });
+}
+
+// Delete a task
+function deleteTask(taskId) {
+    fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadTasks(); // Reload tasks from server
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting task:', error);
+    });
+}
+
+// Prepare a task for editing
+function prepareTaskForEditing(task) {
+    taskTitleInput.value = task.title;
+    taskDateInput.value = task.date ? task.date : '';
+    
+    // Delete the task and let the user create a new one with the edited values
+    deleteTask(task.id);
 }
 
 // Add task event
